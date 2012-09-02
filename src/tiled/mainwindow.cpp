@@ -1423,6 +1423,7 @@ void MainWindow::setStampBrush(const TileLayer *tiles)
 void MainWindow::setTerrainBrush(const Terrain *terrain)
 {
     mTerrainBrush->setTerrain(terrain);
+    mTilesetDock->setTerrain(terrain);
 
     // When selecting a new terrain, it makes sense to switch to a terrain brush tool
     ToolManager *m = ToolManager::instance();

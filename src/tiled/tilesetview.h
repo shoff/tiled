@@ -56,8 +56,38 @@ public:
     TilesetModel *tilesetModel() const
     { return static_cast<TilesetModel *>(model()); }
 
+    /**
+     * Returns whether terrain editing is enabled.
+     * \sa terrainId
+     */
+    bool isEditTerrain() const { return mEditTerrain; }
+
+    /**
+     * Sets whether terrain editing is enabled.
+     * \sa setTerrainId
+     */
+    void setEditTerrain(bool enabled);
+
+    /**
+     * The id of the terrain currently being specified. Set to -1 for erasing
+     * terrain info.
+     */
+    int terrainId() const { return mTerrainId; }
+
+    /**
+     * Sets the id of the terrain to specify on the tiles. An id of -1 allows
+     * for erasing terrain information.
+     */
+    void setTerrainId(int terrainId);
+
+    QModelIndex hoveredIndex() const { return mHoveredIndex; }
+    int hoveredCorner() const { return mHoveredCorner; }
+
 protected:
     bool event(QEvent *event);
+    void mousePressEvent(QMouseEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
+    void leaveEvent(QEvent *);
     void wheelEvent(QWheelEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);
 
@@ -68,9 +98,16 @@ private slots:
     void adjustScale();
 
 private:
+    void applyTerrain();
+
     Zoomable *mZoomable;
     MapDocument *mMapDocument;
     bool mDrawGrid;
+
+    bool mEditTerrain;
+    int mTerrainId;
+    QModelIndex mHoveredIndex;
+    int mHoveredCorner;
 };
 
 } // namespace Internal

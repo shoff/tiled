@@ -32,6 +32,7 @@
 #include "movetileset.h"
 #include "objectgroup.h"
 #include "propertiesdialog.h"
+#include "terrain.h"
 #include "tile.h"
 #include "tilelayer.h"
 #include "tileset.h"
@@ -151,6 +152,7 @@ TilesetDock::TilesetDock(QWidget *parent):
     mPropertiesTileset(new QAction(this)),
     mDeleteTileset(new QAction(this)),
     mRenameTileset(new QAction(this)),
+    mEditTerrainMode(new QAction(this)),
     mTilesetMenuButton(new QToolButton(this)),
     mTilesetMenu(new QMenu(this)),
     mTilesetMenuMapper(0)
@@ -183,6 +185,8 @@ TilesetDock::TilesetDock(QWidget *parent):
     horizontal->addWidget(mToolBar, 1);
     vertical->addLayout(horizontal);
 
+    mEditTerrainMode->setCheckable(true);
+
     mImportTileset->setIcon(QIcon(QLatin1String(":images/16x16/document-import.png")));
     mExportTileset->setIcon(QIcon(QLatin1String(":images/16x16/document-export.png")));
     mPropertiesTileset->setIcon(QIcon(QLatin1String(":images/16x16/document-properties.png")));
@@ -205,6 +209,8 @@ TilesetDock::TilesetDock(QWidget *parent):
             SLOT(removeTileset()));
     connect(mRenameTileset, SIGNAL(triggered()),
             SLOT(renameTileset()));
+    connect(mEditTerrainMode, SIGNAL(toggled(bool)),
+            SLOT(setEditTerrainMode(bool)));
 
     mToolBar->setIconSize(QSize(16, 16));
     mToolBar->addAction(mImportTileset);
@@ -212,6 +218,7 @@ TilesetDock::TilesetDock(QWidget *parent):
     mToolBar->addAction(mPropertiesTileset);
     mToolBar->addAction(mDeleteTileset);
     mToolBar->addAction(mRenameTileset);
+    mToolBar->addAction(mEditTerrainMode);
 
     mZoomable = new Zoomable(this);
     mZoomable->setZoomFactors(QVector<qreal>() << 0.25 << 0.5 << 0.75 << 1.0 << 1.25 << 1.5 << 1.75 << 2.0 << 4.0);
@@ -306,6 +313,19 @@ void TilesetDock::setMapDocument(MapDocument *mapDocument)
     updateActions();
 
     widget()->show();
+}
+
+void TilesetDock::setTerrain(const Terrain *terrain)
+{
+    if (mTerrain == terrain)
+        return;
+
+    mTerrain = terrain;
+
+    if (mEditTerrainMode->isChecked()) {
+        if (TilesetView *view = currentTilesetView())
+            view->setTerrainId(terrain->id());
+    }
 }
 
 void TilesetDock::changeEvent(QEvent *e)
@@ -575,6 +595,7 @@ void TilesetDock::retranslateUi()
     mPropertiesTileset->setText(tr("Tile&set Properties"));
     mDeleteTileset->setText(tr("&Remove Tileset"));
     mRenameTileset->setText(tr("Rena&me Tileset"));
+    mEditTerrainMode->setText(tr("Edit &Terrain"));
 }
 
 Tileset *TilesetDock::currentTileset() const
@@ -584,6 +605,11 @@ Tileset *TilesetDock::currentTileset() const
         return 0;
 
     return mTilesets.at(index);
+}
+
+TilesetView *TilesetDock::currentTilesetView() const
+{
+    return static_cast<TilesetView *>(mViewStack->currentWidget());
 }
 
 TilesetView *TilesetDock::tilesetViewAt(int index) const
@@ -659,6 +685,19 @@ void TilesetDock::renameTileset()
                                             currentTileset(),
                                             oldText, newText);
     mMapDocument->undoStack()->push(name);
+}
+
+void TilesetDock::setEditTerrainMode(bool enabled)
+{
+    TilesetView *view = currentTilesetView();
+    if (!view)
+        return;
+
+    if (enabled) {
+        view->setEditTerrain(true);
+        view->setTerrainId(1);
+    } else
+        view->setEditTerrain(false);
 }
 
 void TilesetDock::tilesetNameChanged(Tileset *tileset)

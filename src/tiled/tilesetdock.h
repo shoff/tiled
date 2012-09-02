@@ -38,6 +38,7 @@ class QMenu;
 
 namespace Tiled {
 
+class Terrain;
 class Tile;
 class TileLayer;
 class Tileset;
@@ -73,6 +74,11 @@ public:
      * Returns the currently selected tile.
      */
     Tile *currentTile() const { return mCurrentTile; }
+
+    /**
+     * Set the current terrain, to be applied in terrain editing mode.
+     */
+    void setTerrain(const Terrain *terrain);
 
 signals:
     /**
@@ -116,6 +122,8 @@ private slots:
 
     void renameTileset();
 
+    void setEditTerrainMode(bool enabled);
+
     void documentCloseRequested(int index);
 
     void refreshTilesetMenu();
@@ -126,6 +134,7 @@ private:
     void retranslateUi();
 
     Tileset *currentTileset() const;
+    TilesetView *currentTilesetView() const;
     TilesetView *tilesetViewAt(int index) const;
 
     MapDocument *mMapDocument;
@@ -135,12 +144,14 @@ private:
     QToolBar *mToolBar;
     Tile *mCurrentTile;
     TileLayer *mCurrentTiles;
+    const Terrain *mTerrain;
 
     QAction *mImportTileset;
     QAction *mExportTileset;
     QAction *mPropertiesTileset;
     QAction *mDeleteTileset;
     QAction *mRenameTileset;
+    QAction *mEditTerrainMode;
 
     QMap<MapDocument *, QString> mCurrentTilesets;
 

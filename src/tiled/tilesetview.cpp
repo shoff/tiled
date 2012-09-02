@@ -43,6 +43,8 @@
 #include <QUndoCommand>
 #include <QWheelEvent>
 
+#include <QDebug>
+
 using namespace Tiled;
 using namespace Tiled::Internal;
 
@@ -96,6 +98,59 @@ void TileDelegate::paint(QPainter *painter,
         painter->fillRect(targetRect, option.palette.highlight());
         painter->setOpacity(opacity);
     }
+
+    if (mTilesetView->isEditTerrain()) {
+        for (int corner = 0; corner < 4; ++corner) {
+            if (static_cast<const TilesetModel*>(index.model())->tileAt(index)->cornerTerrainId(corner) == mTilesetView->terrainId()) {
+                QPoint pos;
+                switch (corner) {
+                case 0: pos = option.rect.topLeft(); break;
+                case 1: pos = option.rect.topRight(); break;
+                case 2: pos = option.rect.bottomLeft(); break;
+                case 3: pos = option.rect.bottomRight(); break;
+                }
+
+                painter->save();
+                painter->setBrush(Qt::gray);
+                painter->setPen(Qt::NoPen);
+                painter->setClipRect(option.rect.adjusted(0, 0, -extra, -extra));
+                painter->setRenderHint(QPainter::Antialiasing);
+                painter->setOpacity(0.5);
+                painter->drawEllipse(pos, option.rect.width() / 2, option.rect.height() / 2);
+                painter->setOpacity(1);
+                QPen pen(Qt::darkGray);
+                pen.setWidth(2);
+                painter->setPen(pen);
+                painter->drawEllipse(pos, option.rect.width() / 4, option.rect.height() / 4);
+                painter->restore();
+            }
+        }
+
+        // Overlay with terrain corner indication when hovered
+        if (index == mTilesetView->hoveredIndex()) {
+            QPoint pos;
+            switch (mTilesetView->hoveredCorner()) {
+            case 0: pos = option.rect.topLeft(); break;
+            case 1: pos = option.rect.topRight(); break;
+            case 2: pos = option.rect.bottomLeft(); break;
+            case 3: pos = option.rect.bottomRight(); break;
+            }
+
+            painter->save();
+            painter->setBrush(option.palette.highlight());
+            painter->setPen(Qt::NoPen);
+            painter->setClipRect(option.rect.adjusted(0, 0, -extra, -extra));
+            painter->setRenderHint(QPainter::Antialiasing);
+            painter->setOpacity(0.5);
+            painter->drawEllipse(pos, option.rect.width() / 2, option.rect.height() / 2);
+            painter->setOpacity(1);
+            QPen pen(option.palette.highlight().color().darker());
+            pen.setWidth(2);
+            painter->setPen(pen);
+            painter->drawEllipse(pos, option.rect.width() / 4, option.rect.height() / 4);
+            painter->restore();
+        }
+    }
 }
 
 QSize TileDelegate::sizeHint(const QStyleOptionViewItem & /* option */,
@@ -118,6 +173,8 @@ TilesetView::TilesetView(MapDocument *mapDocument, Zoomable *zoomable, QWidget *
     : QTableView(parent)
     , mZoomable(zoomable)
     , mMapDocument(mapDocument)
+    , mEditTerrain(false)
+    , mTerrainId(-1)
 {
     setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
     setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
@@ -188,6 +245,80 @@ bool TilesetView::event(QEvent *event)
     }
 
     return QTableView::event(event);
+}
+
+void TilesetView::setEditTerrain(bool enabled)
+{
+    if (mEditTerrain == enabled)
+        return;
+
+    mEditTerrain = enabled;
+    setMouseTracking(true);
+    viewport()->update();
+}
+
+void TilesetView::setTerrainId(int terrainId)
+{
+    if (mTerrainId == terrainId)
+        return;
+
+    mTerrainId = terrainId;
+    if (mEditTerrain)
+        viewport()->update();
+}
+
+void TilesetView::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton)
+        applyTerrain();
+}
+
+void TilesetView::mouseMoveEvent(QMouseEvent *event)
+{
+    if (!mEditTerrain) {
+        QTableView::mouseMoveEvent(event);
+        return;
+    }
+
+    const QPoint pos = event->pos();
+    const QModelIndex hoveredIndex = indexAt(pos);
+    int hoveredCorner = 0;
+
+    if (hoveredIndex.isValid()) {
+        const QPoint center = visualRect(hoveredIndex).center();
+        qDebug() << pos << center;
+
+        if (pos.x() > center.x())
+            hoveredCorner += 1;
+        if (pos.y() > center.y())
+            hoveredCorner += 2;
+    }
+
+    if (mHoveredIndex != hoveredIndex || mHoveredCorner != hoveredCorner) {
+        const QModelIndex previousHoveredIndex = mHoveredIndex;
+        mHoveredIndex = hoveredIndex;
+        mHoveredCorner = hoveredCorner;
+
+        if (previousHoveredIndex.isValid())
+            update(previousHoveredIndex);
+        if (previousHoveredIndex != mHoveredIndex && mHoveredIndex.isValid())
+            update(mHoveredIndex);
+    }
+
+    if (event->buttons() & Qt::LeftButton)
+        applyTerrain();
+}
+
+void TilesetView::leaveEvent(QEvent *)
+{
+    if (!mEditTerrain)
+        return;
+
+    if (mHoveredIndex.isValid()) {
+        const QModelIndex previousHoveredIndex = mHoveredIndex;
+        mHoveredIndex = QModelIndex();
+        update(previousHoveredIndex);
+    }
 }
 
 /**
@@ -277,4 +408,14 @@ void TilesetView::adjustScale()
 {
     if (TilesetModel *model = tilesetModel())
         model->tilesetChanged();
+}
+
+void TilesetView::applyTerrain()
+{
+    if (!mHoveredIndex.isValid())
+        return;
+
+    // Modify the terrain of the tile (TODO: Undo)
+    Tile *tile = tilesetModel()->tileAt(mHoveredIndex);
+    tile->setCornerTerrain(mHoveredCorner, mTerrainId);
 }
