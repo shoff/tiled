@@ -443,9 +443,8 @@ void MapReaderPrivate::readTilesetTerrainTypes(Tileset *tileset)
             const QXmlStreamAttributes atts = xml.attributes();
             QString name = atts.value(QLatin1String("name")).toString();
             int tile = atts.value(QLatin1String("tile")).toString().toInt();
-//            int tile = atts.value(QLatin1String("color")).toString().toInt();
 
-            Terrain *terrain = new Terrain(tileset->terrainCount(), tileset, name, tile);
+            Terrain *terrain = tileset->addTerrain(name, tile);
 
             QString distances = atts.value(QLatin1String("distances")).toString();
             if (!distances.isEmpty()) {
@@ -457,8 +456,6 @@ void MapReaderPrivate::readTilesetTerrainTypes(Tileset *tileset)
                 }
                 terrain->setTransitionDistances(dist);
             }
-
-            tileset->addTerrain(terrain);
 
             xml.skipCurrentElement();
         }

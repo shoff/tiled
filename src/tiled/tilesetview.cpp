@@ -75,10 +75,10 @@ void TileDelegate::paint(QPainter *painter,
                          const QStyleOptionViewItem &option,
                          const QModelIndex &index) const
 {
-    const QVariant display = index.model()->data(index, Qt::DisplayRole);
+    const QVariant display = index.model()->data(index, Qt::DecorationRole);
     const QPixmap tileImage = display.value<QPixmap>();
     const int extra = mTilesetView->drawGrid() ? 1 : 0;
-    const qreal zoom = mTilesetView->zoomable()->scale();
+    const qreal zoom = mTilesetView->scale();
 
     // Compute rectangle to draw the image in: bottom- and left-aligned
     QRect targetRect = option.rect.adjusted(0, 0, -extra, -extra);
@@ -86,8 +86,9 @@ void TileDelegate::paint(QPainter *painter,
     targetRect.setRight(targetRect.right() - targetRect.width() + tileImage.width() * zoom);
 
     // Draw the tile image
-    if (mTilesetView->zoomable()->smoothTransform())
-        painter->setRenderHint(QPainter::SmoothPixmapTransform);
+    if (Zoomable *zoomable = mTilesetView->zoomable())
+        if (zoomable->smoothTransform())
+            painter->setRenderHint(QPainter::SmoothPixmapTransform);
 
     painter->drawPixmap(targetRect, tileImage);
 
@@ -158,7 +159,7 @@ QSize TileDelegate::sizeHint(const QStyleOptionViewItem & /* option */,
 {
     const TilesetModel *m = static_cast<const TilesetModel*>(index.model());
     const Tileset *tileset = m->tileset();
-    const qreal zoom = mTilesetView->zoomable()->scale();
+    const qreal zoom = mTilesetView->scale();
     const int extra = mTilesetView->drawGrid() ? 1 : 0;
 
     return QSize(tileset->tileWidth() * zoom + extra,
@@ -169,10 +170,10 @@ QSize TileDelegate::sizeHint(const QStyleOptionViewItem & /* option */,
 
 } // anonymous namespace
 
-TilesetView::TilesetView(MapDocument *mapDocument, Zoomable *zoomable, QWidget *parent)
+TilesetView::TilesetView(QWidget *parent)
     : QTableView(parent)
-    , mZoomable(zoomable)
-    , mMapDocument(mapDocument)
+    , mZoomable(0)
+    , mMapDocument(0)
     , mEditTerrain(false)
     , mTerrainId(-1)
 {
@@ -204,9 +205,13 @@ TilesetView::TilesetView(MapDocument *mapDocument, Zoomable *zoomable, QWidget *
 
     grabGesture(Qt::PinchGesture);
 
-    connect(mZoomable, SIGNAL(scaleChanged(qreal)), SLOT(adjustScale()));
     connect(prefs, SIGNAL(showTilesetGridChanged(bool)),
             SLOT(setDrawGrid(bool)));
+}
+
+void TilesetView::setMapDocument(MapDocument *mapDocument)
+{
+    mMapDocument = mapDocument;
 }
 
 QSize TilesetView::sizeHint() const
@@ -222,7 +227,7 @@ int TilesetView::sizeHintForColumn(int column) const
         return -1;
 
     const int tileWidth = model->tileset()->tileWidth();
-    return tileWidth * zoomable()->scale() + (mDrawGrid ? 1 : 0);
+    return tileWidth * scale() + (mDrawGrid ? 1 : 0);
 }
 
 int TilesetView::sizeHintForRow(int row) const
@@ -233,7 +238,24 @@ int TilesetView::sizeHintForRow(int row) const
         return -1;
 
     const int tileHeight = model->tileset()->tileHeight();
-    return tileHeight * zoomable()->scale() + (mDrawGrid ? 1 : 0);
+    return tileHeight * scale() + (mDrawGrid ? 1 : 0);
+}
+
+void TilesetView::setZoomable(Zoomable *zoomable)
+{
+    if (mZoomable)
+        mZoomable->disconnect(this);
+
+    if (zoomable)
+        connect(zoomable, SIGNAL(scaleChanged(qreal)), SLOT(adjustScale()));
+
+    mZoomable = zoomable;
+    adjustScale();
+}
+
+qreal TilesetView::scale() const
+{
+    return mZoomable ? mZoomable->scale() : 1;
 }
 
 bool TilesetView::event(QEvent *event)
@@ -269,6 +291,11 @@ void TilesetView::setTerrainId(int terrainId)
 
 void TilesetView::mousePressEvent(QMouseEvent *event)
 {
+    if (!mEditTerrain) {
+        QTableView::mousePressEvent(event);
+        return;
+    }
+
     if (event->button() == Qt::LeftButton)
         applyTerrain();
 }
@@ -309,16 +336,15 @@ void TilesetView::mouseMoveEvent(QMouseEvent *event)
         applyTerrain();
 }
 
-void TilesetView::leaveEvent(QEvent *)
+void TilesetView::leaveEvent(QEvent *event)
 {
-    if (!mEditTerrain)
-        return;
-
     if (mHoveredIndex.isValid()) {
         const QModelIndex previousHoveredIndex = mHoveredIndex;
         mHoveredIndex = QModelIndex();
         update(previousHoveredIndex);
     }
+
+    QTableView::leaveEvent(event);
 }
 
 /**
@@ -415,7 +441,7 @@ void TilesetView::applyTerrain()
     if (!mHoveredIndex.isValid())
         return;
 
-    // Modify the terrain of the tile (TODO: Undo)
+    // Modify the terrain of the tile (TODO: Undo (probably via the TilesetModel))
     Tile *tile = tilesetModel()->tileAt(mHoveredIndex);
     tile->setCornerTerrain(mHoveredCorner, mTerrainId);
 }

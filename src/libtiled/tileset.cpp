@@ -33,6 +33,8 @@
 
 #include <QBitmap>
 
+#include <QDebug>
+
 using namespace Tiled;
 
 Tileset::~Tileset()
@@ -114,9 +116,27 @@ int Tileset::columnCountForWidth(int width) const
     return (width - mMargin + mTileSpacing) / (mTileWidth + mTileSpacing);
 }
 
-void Tileset::addTerrain(Terrain *terrain)
+Terrain *Tileset::addTerrain(const QString &name, int imageTile)
 {
-    mTerrainTypes.push_back(terrain);
+    Terrain *terrain = new Terrain(terrainCount(), this, name, imageTile);
+    mTerrainTypes.append(terrain);
+
+    // TODO: Adjust transition distances
+
+    return terrain;
+}
+
+void Tileset::removeTerrain(int index)
+{
+    qDebug() << Q_FUNC_INFO << index;
+    mTerrainTypes.removeAt(index);
+
+    // Reassign terrain IDs
+    for (int terrainId = index; terrainId < mTerrainTypes.size(); ++terrainId)
+        mTerrainTypes.at(terrainId)->setId(terrainId);
+
+    // TODO: Adjust all references to these terrain IDs by the tiles and the
+    // transition distances...
 }
 
 int Tileset::terrainTransitionPenalty(int terrainType0, int terrainType1)

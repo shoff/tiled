@@ -122,7 +122,7 @@ private slots:
 
     void renameTileset();
 
-    void setEditTerrainMode(bool enabled);
+    void editTerrain();
 
     void documentCloseRequested(int index);
 
@@ -151,7 +151,7 @@ private:
     QAction *mPropertiesTileset;
     QAction *mDeleteTileset;
     QAction *mRenameTileset;
-    QAction *mEditTerrainMode;
+    QAction *mEditTerrain;
 
     QMap<MapDocument *, QString> mCurrentTilesets;
 

@@ -41,6 +41,7 @@
 #include "resizelayer.h"
 #include "resizemap.h"
 #include "staggeredrenderer.h"
+#include "terrain.h"
 #include "tile.h"
 #include "tilelayer.h"
 #include "tilesetmanager.h"
@@ -553,4 +554,16 @@ void MapDocument::setTilesetName(Tileset *tileset, const QString &name)
 {
     tileset->setName(name);
     emit tilesetNameChanged(tileset);
+}
+
+void MapDocument::setTerrainName(Tileset *tileset, int terrainId, const QString &name)
+{
+    tileset->terrain(terrainId)->setName(name);
+    emit terrainChanged(tileset, terrainId);
+}
+
+void MapDocument::setTerrainImage(Tileset *tileset, int terrainId, int tileId)
+{
+    tileset->terrain(terrainId)->setImageTileId(tileId);
+    emit terrainChanged(tileset, terrainId);
 }

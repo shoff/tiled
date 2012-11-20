@@ -206,7 +206,7 @@ void TerrainDock::dropEvent(QDropEvent *)
 void TerrainDock::insertTilesetView(int index, Tileset *tileset)
 {
     TerrainView *view = new TerrainView(mMapDocument);
-    view->setModel(new TerrainModel(tileset, view));
+    view->setModel(new TerrainModel(mMapDocument, tileset, view));
 
     connect(view->selectionModel(),
             SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
@@ -240,9 +240,9 @@ void TerrainDock::updateCurrentTiles()
     const QModelIndex &first = indexes.first();
 
     const TerrainModel *model = static_cast<const TerrainModel*>(s->model());
-    Terrain *terraion = model->terrainAt(first);
+    Terrain *terrain = model->terrainAt(first);
 
-    setCurrentTerrain(terraion);
+    setCurrentTerrain(terrain);
 }
 
 void TerrainDock::tilesetChanged(Tileset *tileset)

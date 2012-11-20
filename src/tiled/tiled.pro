@@ -139,7 +139,8 @@ SOURCES += aboutdialog.cpp \
     toolmanager.cpp \
     undodock.cpp \
     utils.cpp \
-    zoomable.cpp
+    zoomable.cpp \
+    editterraindialog.cpp
 
 HEADERS += aboutdialog.h \
     abstractobjecttool.h \
@@ -245,7 +246,8 @@ HEADERS += aboutdialog.h \
     undocommands.h \
     undodock.h \
     utils.h \
-    zoomable.h
+    zoomable.h \
+    editterraindialog.h
 
 macx {
     OBJECTIVE_SOURCES += macsupport.mm
@@ -262,7 +264,8 @@ FORMS += aboutdialog.ui \
     propertiesdialog.ui \
     resizedialog.ui \
     saveasimagedialog.ui\
-    newimagelayerdialog.ui
+    newimagelayerdialog.ui \
+    editterraindialog.ui
 
 RESOURCES += tiled.qrc
 macx {

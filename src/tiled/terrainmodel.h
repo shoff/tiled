@@ -23,7 +23,8 @@
 #ifndef TERRAINMODEL_H
 #define TERRAINMODEL_H
 
-#include <QAbstractListModel>
+#include <QAbstractTableModel>
+#include <tileset.h>
 
 namespace Tiled {
 
@@ -32,18 +33,25 @@ class Terrain;
 
 namespace Internal {
 
+class MapDocument;
+
 /**
- * A model wrapping the terrain within a tileset. Used to display the terrain types.
+ * A model wrapping the terrain within a tileset. Used to display the terrain
+ * types.
  */
-class TerrainModel : public QAbstractListModel
+class TerrainModel : public QAbstractTableModel
 {
+    Q_OBJECT
+
 public:
     /**
      * Constructor.
      *
      * @param tileset the initial tileset to display
      */
-    TerrainModel(Tileset *tileset, QObject *parent = 0);
+    TerrainModel(MapDocument *mapDocument,
+                 Tileset *tileset,
+                 QObject *parent = 0);
 
     /**
      * Returns the number of rows. This is equal to the number of tiles.
@@ -61,6 +69,16 @@ public:
      */
     QVariant data(const QModelIndex &index,
                   int role = Qt::DisplayRole) const;
+
+    /**
+     * Allows for changing the name of a terrain.
+     */
+    bool setData(const QModelIndex &index, const QVariant &value, int role);
+
+    /**
+     * Makes terrain names are editable.
+     */
+    Qt::ItemFlags flags(const QModelIndex &index) const;
 
     /**
      * Returns a small size hint, to prevent the headers from affecting the
@@ -82,14 +100,32 @@ public:
     /**
      * Sets the tileset associated with this model.
      */
-    void setTileset(Tileset *tileset);
+    void setTileset(MapDocument *mapDocument, Tileset *tileset);
+
+    /**
+     * Adds a new terrain type.
+     *
+     * @param name      the name of the terrain
+     * @param imageTile the id of the tile that represents the terrain visually
+     * @return the created Terrain instance
+     */
+    Terrain *addTerrain(const QString &name, int imageTile);
+
+    /**
+     * Removes the terrain type at the given index.
+     */
+    void removeTerrain(const QModelIndex &index);
 
     /**
      * Performs a reset on the model.
      */
     void tilesetChanged();
 
+private slots:
+    void terrainChanged(Tileset *tileset, int terrainId);
+
 private:
+    MapDocument *mMapDocument;
     Tileset *mTileset;
 };
 

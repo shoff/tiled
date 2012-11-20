@@ -121,6 +121,11 @@ public:
     int tileHeight() const { return mTileHeight; }
 
     /**
+     * Returns the maximum size of the tiles in this tileset.
+     */
+    QSize tileSize() const { return QSize(mTileWidth, mTileHeight); }
+
+    /**
      * Returns the spacing between the tiles in the tileset image.
      */
     int tileSpacing() const { return mTileSpacing; }
@@ -222,14 +227,27 @@ public:
     int terrainCount() const { return mTerrainTypes.size(); }
 
     /**
-     * Returns the number of tiles in this tileset.
+     * Returns the terrain type at the given index.
      */
-    Terrain *terrain(int terrain) const { return terrain >= 0 ? mTerrainTypes[terrain] : NULL; }
+    Terrain *terrain(int terrain) const { return terrain >= 0 ? mTerrainTypes[terrain] : 0; }
 
     /**
-     * Add a new terrain type.
+     * Adds a new terrain type.
+     *
+     * @param name      the name of the terrain
+     * @param imageTile the id of the tile that represents the terrain visually
+     * @return the created Terrain instance
      */
-    void addTerrain(Terrain *terrain);
+    Terrain *addTerrain(const QString &name, int imageTile);
+
+    /**
+     * Removes the terrain type at the given \a index.
+     *
+     * This will cause the terrain ids of subsequent terrains to shift up to
+     * fill the space and the terrain information of all tiles in this tileset
+     * will be updated accordingly.
+     */
+    void removeTerrain(int index);
 
     /**
      * Calculates the transition distance matrix for all terrain types.

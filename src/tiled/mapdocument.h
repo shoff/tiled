@@ -40,6 +40,7 @@ namespace Tiled {
 class Map;
 class MapObject;
 class MapRenderer;
+class Terrain;
 class Tileset;
 
 namespace Internal {
@@ -154,6 +155,9 @@ public:
     void moveTileset(int from, int to);
     void setTilesetFileName(Tileset *tileset, const QString &fileName);
     void setTilesetName(Tileset *tileset, const QString &name);
+
+    void setTerrainName(Tileset *tileset, int terrainId, const QString &name);
+    void setTerrainImage(Tileset *tileset, int terrainId, int tileId);
 
     /**
      * Returns the layer model. Can be used to modify the layer stack of the
@@ -291,6 +295,11 @@ signals:
     void objectsAboutToBeRemoved(const QList<MapObject*> &objects);
     void objectsRemoved(const QList<MapObject*> &objects);
     void objectsChanged(const QList<MapObject*> &objects);
+
+    /**
+     * Emitted when either the name or the image of a terrain changed.
+     */
+    void terrainChanged(Tileset *tileset, int terrainId);
 
 private slots:
     void onObjectsRemoved(const QList<MapObject*> &objects);

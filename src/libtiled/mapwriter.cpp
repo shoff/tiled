@@ -300,7 +300,7 @@ void MapWriterPrivate::writeTileset(QXmlStreamWriter &w, const Tileset *tileset,
             w.writeStartElement(QLatin1String("terrain"));
             w.writeAttribute(QLatin1String("name"), t->name());
 //            w.writeAttribute(QLatin1String("color"), tt->color());
-            w.writeAttribute(QLatin1String("tile"), QString::number(t->paletteImageTile()));
+            w.writeAttribute(QLatin1String("tile"), QString::number(t->imageTileId()));
             if (t->hasTransitionDistances())
                 w.writeAttribute(QLatin1String("distances"), makeTransitionDistanceAttribute(t, tileset->terrainCount()));
             w.writeEndElement();

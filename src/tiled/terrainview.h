@@ -33,7 +33,7 @@ class MapDocument;
 class Zoomable;
 
 /**
- * The tileset view. May only be used with the TilesetModel.
+ * The terrain view. May only be used with the TerrainModel.
  */
 class TerrainView : public QListView
 {
@@ -49,7 +49,7 @@ public:
     bool drawGrid() const { return mDrawGrid; }
 
     /**
-     * Convenience method that returns the model as a TilesetModel.
+     * Convenience method that returns the model as a TerrainModel.
      */
     TerrainModel *terrainModel() const
     { return static_cast<TerrainModel *>(model()); }

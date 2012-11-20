@@ -73,7 +73,7 @@ void TerrainDelegate::paint(QPainter *painter,
                          const QModelIndex &index) const
 {
     // Draw the terrain image
-    const QVariant display = index.model()->data(index, Qt::DisplayRole);
+    const QVariant display = index.model()->data(index, Qt::DecorationRole);
     const QPixmap terrainImage = display.value<QPixmap>();
     const int extra = mTerrainView->drawGrid() ? 1 : 0;
 
@@ -93,7 +93,7 @@ void TerrainDelegate::paint(QPainter *painter,
 }
 
 QSize TerrainDelegate::sizeHint(const QStyleOptionViewItem & /* option */,
-                             const QModelIndex &index) const
+                                const QModelIndex &index) const
 {
     const TerrainModel *m = static_cast<const TerrainModel*>(index.model());
     const Tileset *tileset = m->tileset();

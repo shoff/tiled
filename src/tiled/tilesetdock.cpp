@@ -25,6 +25,7 @@
 #include "addremovemapobject.h"
 #include "addremovetileset.h"
 #include "documentmanager.h"
+#include "editterraindialog.h"
 #include "erasetiles.h"
 #include "map.h"
 #include "mapdocument.h"
@@ -108,27 +109,17 @@ class RenameTileset : public QUndoCommand
 public:
     RenameTileset(MapDocument *mapDocument,
                   Tileset *tileset,
-                  const QString &oldName,
                   const QString &newName)
         : QUndoCommand(QCoreApplication::translate("Undo Commands",
-                                                   "Change Tileset name"))
+                                                   "Change Tileset Name"))
         , mMapDocument(mapDocument)
         , mTileset(tileset)
-        , mOldName(oldName)
+        , mOldName(tileset->name())
         , mNewName(newName)
-    {
-        redo();
-    }
+    {}
 
-    void undo()
-    {
-        mMapDocument->setTilesetName(mTileset, mOldName);
-    }
-
-    void redo()
-    {
-        mMapDocument->setTilesetName(mTileset, mNewName);
-    }
+    void undo() { mMapDocument->setTilesetName(mTileset, mOldName); }
+    void redo() { mMapDocument->setTilesetName(mTileset, mNewName); }
 
 private:
     MapDocument *mMapDocument;
@@ -152,7 +143,7 @@ TilesetDock::TilesetDock(QWidget *parent):
     mPropertiesTileset(new QAction(this)),
     mDeleteTileset(new QAction(this)),
     mRenameTileset(new QAction(this)),
-    mEditTerrainMode(new QAction(this)),
+    mEditTerrain(new QAction(this)),
     mTilesetMenuButton(new QToolButton(this)),
     mTilesetMenu(new QMenu(this)),
     mTilesetMenuMapper(0)
@@ -185,8 +176,6 @@ TilesetDock::TilesetDock(QWidget *parent):
     horizontal->addWidget(mToolBar, 1);
     vertical->addLayout(horizontal);
 
-    mEditTerrainMode->setCheckable(true);
-
     mImportTileset->setIcon(QIcon(QLatin1String(":images/16x16/document-import.png")));
     mExportTileset->setIcon(QIcon(QLatin1String(":images/16x16/document-export.png")));
     mPropertiesTileset->setIcon(QIcon(QLatin1String(":images/16x16/document-properties.png")));
@@ -209,8 +198,8 @@ TilesetDock::TilesetDock(QWidget *parent):
             SLOT(removeTileset()));
     connect(mRenameTileset, SIGNAL(triggered()),
             SLOT(renameTileset()));
-    connect(mEditTerrainMode, SIGNAL(toggled(bool)),
-            SLOT(setEditTerrainMode(bool)));
+    connect(mEditTerrain, SIGNAL(triggered()),
+            SLOT(editTerrain()));
 
     mToolBar->setIconSize(QSize(16, 16));
     mToolBar->addAction(mImportTileset);
@@ -218,7 +207,7 @@ TilesetDock::TilesetDock(QWidget *parent):
     mToolBar->addAction(mPropertiesTileset);
     mToolBar->addAction(mDeleteTileset);
     mToolBar->addAction(mRenameTileset);
-    mToolBar->addAction(mEditTerrainMode);
+    mToolBar->addAction(mEditTerrain);
 
     mZoomable = new Zoomable(this);
     mZoomable->setZoomFactors(QVector<qreal>() << 0.25 << 0.5 << 0.75 << 1.0 << 1.25 << 1.5 << 1.75 << 2.0 << 4.0);
@@ -286,8 +275,12 @@ void TilesetDock::setMapDocument(MapDocument *mapDocument)
         mTilesets = mMapDocument->map()->tilesets();
 
         foreach (Tileset *tileset, mTilesets) {
+            TilesetView *view = new TilesetView;
+            view->setMapDocument(mMapDocument);
+            view->setZoomable(mZoomable);
+
             mTabBar->addTab(tileset->name());
-            mViewStack->addWidget(new TilesetView(mMapDocument, mZoomable));
+            mViewStack->addWidget(view);
         }
 
         connect(mMapDocument, SIGNAL(tilesetAdded(int,Tileset*)),
@@ -322,7 +315,7 @@ void TilesetDock::setTerrain(const Terrain *terrain)
 
     mTerrain = terrain;
 
-    if (mEditTerrainMode->isChecked()) {
+    if (mEditTerrain->isChecked()) {
         if (TilesetView *view = currentTilesetView())
             view->setTerrainId(terrain->id());
     }
@@ -437,10 +430,13 @@ void TilesetDock::updateCurrentTiles()
 
 void TilesetDock::tilesetAdded(int index, Tileset *tileset)
 {
-    mTilesets.insert(index, tileset);
+    TilesetView *view = new TilesetView;
+    view->setMapDocument(mMapDocument);
+    view->setZoomable(mZoomable);
 
+    mTilesets.insert(index, tileset);
     mTabBar->insertTab(index, tileset->name());
-    mViewStack->insertWidget(index, new TilesetView(mMapDocument, mZoomable));
+    mViewStack->insertWidget(index, view);
 
     updateActions();
 }
@@ -595,7 +591,7 @@ void TilesetDock::retranslateUi()
     mPropertiesTileset->setText(tr("Tile&set Properties"));
     mDeleteTileset->setText(tr("&Remove Tileset"));
     mRenameTileset->setText(tr("Rena&me Tileset"));
-    mEditTerrainMode->setText(tr("Edit &Terrain"));
+    mEditTerrain->setText(tr("Edit &Terrain"));
 }
 
 Tileset *TilesetDock::currentTileset() const
@@ -683,21 +679,18 @@ void TilesetDock::renameTileset()
 
     RenameTileset *name = new RenameTileset(mMapDocument,
                                             currentTileset(),
-                                            oldText, newText);
+                                            newText);
     mMapDocument->undoStack()->push(name);
 }
 
-void TilesetDock::setEditTerrainMode(bool enabled)
+void TilesetDock::editTerrain()
 {
-    TilesetView *view = currentTilesetView();
-    if (!view)
+    Tileset *tileset = currentTileset();
+    if (!tileset)
         return;
 
-    if (enabled) {
-        view->setEditTerrain(true);
-        view->setTerrainId(1);
-    } else
-        view->setEditTerrain(false);
+    EditTerrainDialog editTerrainDialog(mMapDocument, tileset, this);
+    editTerrainDialog.exec();
 }
 
 void TilesetDock::tilesetNameChanged(Tileset *tileset)

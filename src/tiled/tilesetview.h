@@ -39,14 +39,26 @@ class TilesetView : public QTableView
     Q_OBJECT
 
 public:
-    TilesetView(MapDocument *mapDocument, Zoomable *zoomable, QWidget *parent = 0);
+    TilesetView(QWidget *parent = 0);
+
+    /**
+     * Sets the map document associated with the tileset to be displayed, which
+     * is needed for the undo support.
+     */
+    void setMapDocument(MapDocument *mapDocument);
 
     QSize sizeHint() const;
 
     int sizeHintForColumn(int column) const;
     int sizeHintForRow(int row) const;
 
+    void setZoomable(Zoomable *zoomable);
     Zoomable *zoomable() const { return mZoomable; }
+
+    /**
+     * Returns the scale at which the tileset is displayed.
+     */
+    qreal scale() const;
 
     bool drawGrid() const { return mDrawGrid; }
 
