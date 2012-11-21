@@ -122,6 +122,9 @@ public:
     void tilesetChanged();
 
 private slots:
+    // XXXXXXXXX Grrr... need to do begin/end insert/remove rows...
+    void terrainAdded(Tileset *tileset, int terrainId);
+    void terrainRemoved(Tileset *tileset, int terrainId);
     void terrainChanged(Tileset *tileset, int terrainId);
 
 private:

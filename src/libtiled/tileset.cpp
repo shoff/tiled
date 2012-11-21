@@ -116,20 +116,32 @@ int Tileset::columnCountForWidth(int width) const
     return (width - mMargin + mTileSpacing) / (mTileWidth + mTileSpacing);
 }
 
-Terrain *Tileset::addTerrain(const QString &name, int imageTile)
+Terrain *Tileset::addTerrain(const QString &name, int imageTileId)
 {
-    Terrain *terrain = new Terrain(terrainCount(), this, name, imageTile);
-    mTerrainTypes.append(terrain);
-
-    // TODO: Adjust transition distances
-
+    Terrain *terrain = new Terrain(terrainCount(), this, name, imageTileId);
+    insertTerrain(terrainCount(), terrain);
     return terrain;
 }
 
-void Tileset::removeTerrain(int index)
+void Tileset::insertTerrain(int index, Terrain *terrain)
 {
     qDebug() << Q_FUNC_INFO << index;
-    mTerrainTypes.removeAt(index);
+    Q_ASSERT(terrain->tileset() == this);
+
+    mTerrainTypes.insert(index, terrain);
+
+    // Reassign terrain IDs
+    for (int terrainId = index; terrainId < mTerrainTypes.size(); ++terrainId)
+        mTerrainTypes.at(terrainId)->setId(terrainId);
+
+    // TODO: Adjust all references to existing terrain IDs by the tiles and the
+    // transition distances...
+}
+
+Terrain *Tileset::takeTerrainAt(int index)
+{
+    qDebug() << Q_FUNC_INFO << index;
+    Terrain *terrain = mTerrainTypes.takeAt(index);
 
     // Reassign terrain IDs
     for (int terrainId = index; terrainId < mTerrainTypes.size(); ++terrainId)
@@ -137,6 +149,7 @@ void Tileset::removeTerrain(int index)
 
     // TODO: Adjust all references to these terrain IDs by the tiles and the
     // transition distances...
+    return terrain;
 }
 
 int Tileset::terrainTransitionPenalty(int terrainType0, int terrainType1)

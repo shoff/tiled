@@ -140,7 +140,8 @@ SOURCES += aboutdialog.cpp \
     undodock.cpp \
     utils.cpp \
     zoomable.cpp \
-    editterraindialog.cpp
+    editterraindialog.cpp \
+    addremoveterrain.cpp
 
 HEADERS += aboutdialog.h \
     abstractobjecttool.h \
@@ -247,7 +248,8 @@ HEADERS += aboutdialog.h \
     undodock.h \
     utils.h \
     zoomable.h \
-    editterraindialog.h
+    editterraindialog.h \
+    addremoveterrain.h
 
 macx {
     OBJECTIVE_SOURCES += macsupport.mm

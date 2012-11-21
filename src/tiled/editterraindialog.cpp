@@ -21,9 +21,13 @@
 #include "editterraindialog.h"
 #include "ui_editterraindialog.h"
 
+#include "addremoveterrain.h"
+#include "mapdocument.h"
 #include "terrain.h"
 #include "terrainmodel.h"
 #include "tileset.h"
+
+#include <QUndoStack>
 
 using namespace Tiled;
 using namespace Tiled::Internal;
@@ -87,8 +91,13 @@ void EditTerrainDialog::selectedTerrainChanged(const QModelIndex &index)
 
 void EditTerrainDialog::addTerrainType()
 {
-    // TODO: Do this via an undo command
-    mTerrainModel->addTerrain(QString(), -1);
+    // TODO: Make the model aware of the terrain being added
+//    mTerrainModel->addTerrain(QString(), -1);
+
+    Terrain *terrain = new Terrain(mTileset->terrainCount(), mTileset,
+                                   QString(), -1);
+
+    mMapDocument->undoStack()->push(new AddTerrain(mMapDocument, terrain));
 }
 
 void EditTerrainDialog::removeTerrainType()
@@ -97,5 +106,8 @@ void EditTerrainDialog::removeTerrainType()
     if (!currentIndex.isValid() || currentIndex.row() == 0)
         return;
 
-    mTerrainModel->removeTerrain(currentIndex);
+    // TODO: Make the model aware of the terrain being removed
+//    mTerrainModel->removeTerrain(currentIndex);
+    Terrain *terrain = mTerrainModel->terrainAt(currentIndex);
+    mMapDocument->undoStack()->push(new RemoveTerrain(mMapDocument, terrain));
 }

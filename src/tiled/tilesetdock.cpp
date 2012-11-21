@@ -181,6 +181,7 @@ TilesetDock::TilesetDock(QWidget *parent):
     mPropertiesTileset->setIcon(QIcon(QLatin1String(":images/16x16/document-properties.png")));
     mDeleteTileset->setIcon(QIcon(QLatin1String(":images/16x16/edit-delete.png")));
     mRenameTileset->setIcon(QIcon(QLatin1String(":images/16x16/edit-rename.png")));
+    mEditTerrain->setIcon(QIcon(QLatin1String(":images/16x16/terrain.png")));
 
     Utils::setThemeIcon(mImportTileset, "document-import");
     Utils::setThemeIcon(mExportTileset, "document-export");
@@ -383,6 +384,7 @@ void TilesetDock::updateActions()
     mExportTileset->setEnabled(view && !external);
     mPropertiesTileset->setEnabled(view && !external);
     mDeleteTileset->setEnabled(view);
+    mEditTerrain->setEnabled(view && !external);
 }
 
 void TilesetDock::updateCurrentTiles()
@@ -591,7 +593,7 @@ void TilesetDock::retranslateUi()
     mPropertiesTileset->setText(tr("Tile&set Properties"));
     mDeleteTileset->setText(tr("&Remove Tileset"));
     mRenameTileset->setText(tr("Rena&me Tileset"));
-    mEditTerrain->setText(tr("Edit &Terrain"));
+    mEditTerrain->setText(tr("Edit &Terrain Information"));
 }
 
 Tileset *TilesetDock::currentTileset() const

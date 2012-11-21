@@ -556,14 +556,39 @@ void MapDocument::setTilesetName(Tileset *tileset, const QString &name)
     emit tilesetNameChanged(tileset);
 }
 
-void MapDocument::setTerrainName(Tileset *tileset, int terrainId, const QString &name)
+/**
+ * Adds a terrain type to the given \a tileset at \a index. Emits the
+ * appropriate signal.
+ */
+void MapDocument::insertTerrain(Tileset *tileset, int index, Terrain *terrain)
 {
-    tileset->terrain(terrainId)->setName(name);
-    emit terrainChanged(tileset, terrainId);
+    tileset->insertTerrain(index, terrain);
+    emit terrainAdded(tileset, index);
 }
 
-void MapDocument::setTerrainImage(Tileset *tileset, int terrainId, int tileId)
+/**
+ * Removes the terrain type from the given \a tileset at \a index and returns
+ * it. The caller becomes responsible for the lifetime of the terrain type.
+ * Emits the appropriate signal.
+ *
+ * \warning This will update terrain information of all the tiles in the
+ *          tileset, clearing references to the removed terrain.
+ */
+Terrain *MapDocument::takeTerrainAt(Tileset *tileset, int index)
 {
-    tileset->terrain(terrainId)->setImageTileId(tileId);
-    emit terrainChanged(tileset, terrainId);
+    Terrain *terrain = tileset->takeTerrainAt(index);
+    emit terrainRemoved(tileset, index);
+    return terrain;
+}
+
+void MapDocument::setTerrainName(Tileset *tileset, int index, const QString &name)
+{
+    tileset->terrain(index)->setName(name);
+    emit terrainChanged(tileset, index);
+}
+
+void MapDocument::setTerrainImage(Tileset *tileset, int index, int tileId)
+{
+    tileset->terrain(index)->setImageTileId(tileId);
+    emit terrainChanged(tileset, index);
 }

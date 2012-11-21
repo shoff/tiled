@@ -105,6 +105,10 @@ TerrainModel::TerrainModel(MapDocument *mapDocument,
     mMapDocument(mapDocument),
     mTileset(tileset)
 {
+    connect(mapDocument, SIGNAL(terrainAdded(Tileset*,int)),
+            SLOT(terrainAdded(Tileset*,int)));
+    connect(mapDocument, SIGNAL(terrainRemoved(Tileset*,int)),
+            SLOT(terrainRemoved(Tileset*,int)));
     connect(mapDocument, SIGNAL(terrainChanged(Tileset*,int)),
             SLOT(terrainChanged(Tileset*,int)));
 }
@@ -216,7 +220,7 @@ void TerrainModel::removeTerrain(const QModelIndex &index)
     const int row = index.row();
 
     beginRemoveRows(QModelIndex(), row, row);
-    mTileset->removeTerrain(row - 1);
+    mTileset->takeTerrainAt(row - 1);
     endRemoveRows();
 }
 
@@ -224,6 +228,22 @@ void TerrainModel::tilesetChanged()
 {
     beginResetModel();
     endResetModel();
+}
+
+void TerrainModel::terrainAdded(Tileset *tileset, int terrainId)
+{
+    if (mTileset != tileset)
+        return;
+
+    // Wrong... I need to be the one adding terrains
+}
+
+void TerrainModel::terrainRemoved(Tileset *tileset, int terrainId)
+{
+    if (mTileset != tileset)
+        return;
+
+    // Wrong... I need to be the one removing terrains
 }
 
 void TerrainModel::terrainChanged(Tileset *tileset, int terrainId)

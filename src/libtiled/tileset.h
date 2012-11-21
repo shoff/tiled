@@ -238,16 +238,24 @@ public:
      * @param imageTile the id of the tile that represents the terrain visually
      * @return the created Terrain instance
      */
-    Terrain *addTerrain(const QString &name, int imageTile);
+    Terrain *addTerrain(const QString &name, int imageTileId);
 
     /**
-     * Removes the terrain type at the given \a index.
+     * Adds the \a terrain type at the given \a index.
+     *
+     * The terrain should already have this tileset associated with it.
+     */
+    void insertTerrain(int index, Terrain *terrain);
+
+    /**
+     * Removes the terrain type at the given \a index and returns it. The
+     * caller becomes responsible for the lifetime of the terrain type.
      *
      * This will cause the terrain ids of subsequent terrains to shift up to
      * fill the space and the terrain information of all tiles in this tileset
      * will be updated accordingly.
      */
-    void removeTerrain(int index);
+    Terrain *takeTerrainAt(int index);
 
     /**
      * Calculates the transition distance matrix for all terrain types.

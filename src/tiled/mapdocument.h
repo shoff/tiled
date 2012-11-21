@@ -156,8 +156,10 @@ public:
     void setTilesetFileName(Tileset *tileset, const QString &fileName);
     void setTilesetName(Tileset *tileset, const QString &name);
 
-    void setTerrainName(Tileset *tileset, int terrainId, const QString &name);
-    void setTerrainImage(Tileset *tileset, int terrainId, int tileId);
+    void insertTerrain(Tileset *tileset, int index, Terrain *terrain);
+    Terrain *takeTerrainAt(Tileset *tileset, int index);
+    void setTerrainName(Tileset *tileset, int index, const QString &name);
+    void setTerrainImage(Tileset *tileset, int index, int tileId);
 
     /**
      * Returns the layer model. Can be used to modify the layer stack of the
@@ -296,10 +298,13 @@ signals:
     void objectsRemoved(const QList<MapObject*> &objects);
     void objectsChanged(const QList<MapObject*> &objects);
 
+    void terrainAdded(Tileset *tileset, int index);
+    void terrainRemoved(Tileset *tileset, int index);
+
     /**
      * Emitted when either the name or the image of a terrain changed.
      */
-    void terrainChanged(Tileset *tileset, int terrainId);
+    void terrainChanged(Tileset *tileset, int index);
 
 private slots:
     void onObjectsRemoved(const QList<MapObject*> &objects);
@@ -314,7 +319,7 @@ private:
 
     QString mFileName;
 
-    /**
+    /*
      * The filename of a plugin is unique. So it can be used to determine
      * the right plugin to be used for saving the map again.
      * The nameFilter of a plugin can not be used, since it's translatable.
