@@ -23,7 +23,7 @@
 #ifndef TERRAINMODEL_H
 #define TERRAINMODEL_H
 
-#include <QAbstractTableModel>
+#include <QAbstractItemModel>
 #include <tileset.h>
 
 namespace Tiled {
@@ -36,10 +36,9 @@ namespace Internal {
 class MapDocument;
 
 /**
- * A model wrapping the terrain within a tileset. Used to display the terrain
- * types.
+ * A model providing a tree view on the terrain types available on a map.
  */
-class TerrainModel : public QAbstractTableModel
+class TerrainModel : public QAbstractItemModel
 {
     Q_OBJECT
 
@@ -50,11 +49,22 @@ public:
      * @param tileset the initial tileset to display
      */
     TerrainModel(MapDocument *mapDocument,
-                 Tileset *tileset,
                  QObject *parent = 0);
 
+    ~TerrainModel();
+
+    QModelIndex index(int row, int column,
+                      const QModelIndex &parent = QModelIndex()) const;
+
+    QModelIndex index(Tileset *tileset) const;
+    QModelIndex index(Terrain *terrain, int column = 0) const;
+
+    QModelIndex parent(const QModelIndex &child) const;
+
     /**
-     * Returns the number of rows. This is equal to the number of tiles.
+     * Returns the number of rows. For the root, this is the number of tilesets
+     * with terrain types defined. Otherwise it is the number of terrain types
+     * in a certain tileset.
      */
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
 
@@ -88,48 +98,59 @@ public:
                         int role = Qt::DisplayRole) const;
 
     /**
-     * Returns the tile at the given index.
+     * Returns the tileset at the given index, or 0 if there is no tileset.
+     */
+    Tileset *tilesetAt(const QModelIndex &index) const;
+
+    /**
+     * Returns the terrain at the given index, or 0 if there is no terrain.
      */
     Terrain *terrainAt(const QModelIndex &index) const;
 
-    /**
-     * Returns the tileset associated with this model.
-     */
-    Tileset *tileset() const { return mTileset; }
+    void insertTerrain(Tileset *tileset, int index, Terrain *terrain);
+    Terrain *takeTerrainAt(Tileset *tileset, int index);
+    void setTerrainName(Tileset *tileset, int index, const QString &name);
+    void setTerrainImage(Tileset *tileset, int index, int tileId);
 
-    /**
-     * Sets the tileset associated with this model.
-     */
-    void setTileset(MapDocument *mapDocument, Tileset *tileset);
-
-    /**
-     * Adds a new terrain type.
-     *
-     * @param name      the name of the terrain
-     * @param imageTile the id of the tile that represents the terrain visually
-     * @return the created Terrain instance
-     */
-    Terrain *addTerrain(const QString &name, int imageTile);
-
-    /**
-     * Removes the terrain type at the given index.
-     */
-    void removeTerrain(const QModelIndex &index);
-
-    /**
-     * Performs a reset on the model.
-     */
-    void tilesetChanged();
-
-private slots:
-    // XXXXXXXXX Grrr... need to do begin/end insert/remove rows...
+signals:
     void terrainAdded(Tileset *tileset, int terrainId);
     void terrainRemoved(Tileset *tileset, int terrainId);
-    void terrainChanged(Tileset *tileset, int terrainId);
+
+    /**
+     * Emitted when either the name or the image of a terrain changed.
+     */
+    void terrainChanged(Tileset *tileset, int index);
 
 private:
+    // TODO: Get rid of this class. Should be possible when:
+    //  index.internalPointer is only set for terrains
+    //  when it is not set, it points to tilesetAt(row)
+    //  when it is set, it points to tileset->terrainAt(row)
+    struct Node
+    {
+        enum NodeType {
+            TilesetNode,
+            TerrainNode
+        };
+
+        Node(Tileset *tileset) : type(TilesetNode), tileset(tileset) {}
+        Node(Terrain *terrain) : type(TerrainNode), terrain(terrain) {}
+
+        bool isTileset() const { return type == TilesetNode; }
+        bool isTerrain() const { return type == TerrainNode; }
+
+        NodeType type;
+        union {
+            Tileset *tileset;
+            Terrain *terrain;
+        };
+    };
+
+    void emitTerrainChanged(Terrain *terrain);
+
     MapDocument *mMapDocument;
-    Tileset *mTileset;
+    QHash<Tileset*, Node*> mTilesetNodes;
+    QHash<Terrain*, Node*> mTerrainNodes;
 };
 
 } // namespace Internal

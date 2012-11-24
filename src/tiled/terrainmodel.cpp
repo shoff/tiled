@@ -53,10 +53,10 @@ public:
     {}
 
     void undo()
-    { mMapDocument->setTerrainName(mTileset, mTerrainId, mOldName); }
+    { mMapDocument->terrainModel()->setTerrainName(mTileset, mTerrainId, mOldName); }
 
     void redo()
-    { mMapDocument->setTerrainName(mTileset, mTerrainId, mNewName); }
+    { mMapDocument->terrainModel()->setTerrainName(mTileset, mTerrainId, mNewName); }
 
 private:
     MapDocument *mMapDocument;
@@ -83,10 +83,10 @@ public:
     {}
 
     void undo()
-    { mMapDocument->setTerrainImage(mTileset, mTerrainId, mOldImageTileId); }
+    { mMapDocument->terrainModel()->setTerrainImage(mTileset, mTerrainId, mOldImageTileId); }
 
     void redo()
-    { mMapDocument->setTerrainImage(mTileset, mTerrainId, mNewImageTileId); }
+    { mMapDocument->terrainModel()->setTerrainImage(mTileset, mTerrainId, mNewImageTileId); }
 
 private:
     MapDocument *mMapDocument;
@@ -99,48 +99,97 @@ private:
 } // anonymous namespace
 
 TerrainModel::TerrainModel(MapDocument *mapDocument,
-                           Tileset *tileset,
                            QObject *parent):
-    QAbstractTableModel(parent),
-    mMapDocument(mapDocument),
-    mTileset(tileset)
+    QAbstractItemModel(parent),
+    mMapDocument(mapDocument)
 {
-    connect(mapDocument, SIGNAL(terrainAdded(Tileset*,int)),
-            SLOT(terrainAdded(Tileset*,int)));
-    connect(mapDocument, SIGNAL(terrainRemoved(Tileset*,int)),
-            SLOT(terrainRemoved(Tileset*,int)));
-    connect(mapDocument, SIGNAL(terrainChanged(Tileset*,int)),
-            SLOT(terrainChanged(Tileset*,int)));
+    foreach (Tileset *tileset, mMapDocument->map()->tilesets()) {
+        mTilesetNodes.insert(tileset, new Node(tileset));
+        foreach (Terrain *terrain, tileset->terrains())
+            mTerrainNodes.insert(terrain, new Node(terrain));
+    }
+}
+
+TerrainModel::~TerrainModel()
+{
+    qDeleteAll(mTilesetNodes);
+    qDeleteAll(mTerrainNodes);
+}
+
+QModelIndex TerrainModel::index(int row, int column, const QModelIndex &parent) const
+{
+    if (!hasIndex(row, column, parent))
+        return QModelIndex();
+
+    if (!parent.isValid()) {
+        Tileset *tileset = mMapDocument->map()->tilesetAt(row);
+        return createIndex(row, column, mTilesetNodes.value(tileset));
+    } else if (Tileset *tileset = tilesetAt(parent)) {
+        Terrain *terrain = tileset->terrain(row);
+        return createIndex(row, column, mTerrainNodes.value(terrain));
+    }
+
+    return QModelIndex();
+}
+
+QModelIndex TerrainModel::index(Tileset *tileset) const
+{
+    int row = mMapDocument->map()->tilesets().indexOf(tileset);
+    Node *node = mTilesetNodes.value(tileset);
+    Q_ASSERT(row != -1);
+    Q_ASSERT(node);
+
+    return createIndex(row, 0, node);
+}
+
+QModelIndex TerrainModel::index(Terrain *terrain, int column) const
+{
+    int row = terrain->tileset()->terrains().indexOf(terrain);
+    Node *node = mTerrainNodes.value(terrain);
+    Q_ASSERT(node);
+
+    return createIndex(row, column, node);
+}
+
+QModelIndex TerrainModel::parent(const QModelIndex &child) const
+{
+    if (Terrain *terrain = terrainAt(child))
+        return index(terrain->tileset());
+
+    return QModelIndex();
 }
 
 int TerrainModel::rowCount(const QModelIndex &parent) const
 {
-    if (parent.isValid())
-        return 0;
+    if (!parent.isValid())
+        return mMapDocument->map()->tilesetCount();
+    else if (Tileset *tileset = tilesetAt(parent))
+        return tileset->terrainCount();
 
-    return mTileset->terrainCount() + 1;
+    return 0;
 }
 
 int TerrainModel::columnCount(const QModelIndex &parent) const
 {
-    return parent.isValid() ? 0 : 2;
+    Q_UNUSED(parent);
+    return 2;
 }
 
 QVariant TerrainModel::data(const QModelIndex &index, int role) const
 {
-    if (index.column() == 0) {
-        if (role == Qt::DecorationRole) {
-            if (Terrain *terrain = terrainAt(index))
+    if (Terrain *terrain = terrainAt(index)) {
+        if (index.column() == 0) {
+            if (role == Qt::DecorationRole) {
                 if (Tile *imageTile = terrain->imageTile())
                     return imageTile->image();
-        }
-    } else if (index.column() == 1) {
-        if (role == Qt::DisplayRole || role == Qt::EditRole) {
-            if (index.row() == 0)
-                return tr("No terrain");
-            else if (Terrain *terrain = terrainAt(index))
+            }
+        } else if (index.column() == 1) {
+            if (role == Qt::DisplayRole || role == Qt::EditRole)
                 return terrain->name();
         }
+    } else if (Tileset *tileset = tilesetAt(index)) {
+        if (index.column() == 0 && role == Qt::DisplayRole)
+            return tileset->name();
     }
 
     return QVariant();
@@ -150,14 +199,14 @@ bool TerrainModel::setData(const QModelIndex &index,
                            const QVariant &value,
                            int role)
 {
-    if (index.row() < 1 || index.column() != 1)
+    if (index.column() != 1)
         return false;
 
     if (role == Qt::EditRole) {
         const QString newName = value.toString();
         Terrain *terrain = terrainAt(index);
         if (terrain->name() != newName) {
-            RenameTerrain *rename = new RenameTerrain(mMapDocument, mTileset,
+            RenameTerrain *rename = new RenameTerrain(mMapDocument, terrain->tileset(),
                                                       terrain->id(), newName);
             mMapDocument->undoStack()->push(rename);
         }
@@ -169,7 +218,7 @@ bool TerrainModel::setData(const QModelIndex &index,
 
 Qt::ItemFlags TerrainModel::flags(const QModelIndex &index) const
 {
-    Qt::ItemFlags rc = QAbstractTableModel::flags(index);
+    Qt::ItemFlags rc = QAbstractItemModel::flags(index);
     if (index.column() == 1)
         rc |= Qt::ItemIsEditable;
     return rc;
@@ -184,74 +233,86 @@ QVariant TerrainModel::headerData(int /* section */,
     return QVariant();
 }
 
+Tileset *TerrainModel::tilesetAt(const QModelIndex &index) const
+{
+    if (!index.isValid())
+        return 0;
+
+    Node *node = static_cast<Node*>(index.internalPointer());
+    if (node->isTileset())
+        return node->tileset;
+
+    return 0;
+}
+
 Terrain *TerrainModel::terrainAt(const QModelIndex &index) const
 {
     if (!index.isValid())
         return 0;
 
-    const int i = index.row() - 1;
-    return i == -1 || i >= mTileset->terrainCount() ? 0 : mTileset->terrain(i);
+    Node *node = static_cast<Node*>(index.internalPointer());
+    if (node->isTerrain())
+        return node->terrain;
+
+    return 0;
 }
 
-void TerrainModel::setTileset(MapDocument *mapDocument, Tileset *tileset)
+/**
+ * Adds a terrain type to the given \a tileset at \a index. Emits the
+ * appropriate signal.
+ */
+void TerrainModel::insertTerrain(Tileset *tileset, int index, Terrain *terrain)
 {
-    if (mMapDocument == mapDocument && mTileset == tileset)
-        return;
+    const QModelIndex tilesetIndex = TerrainModel::index(tileset);
 
-    beginResetModel();
-    mMapDocument = mapDocument;
-    mTileset = tileset;
-    endResetModel();
-}
+    mTerrainNodes.insert(terrain, new Node(terrain));
 
-Terrain *TerrainModel::addTerrain(const QString &name, int imageTile)
-{
-    const int rowCount = mTileset->terrainCount() + 1;
-
-    beginInsertRows(QModelIndex(), rowCount, rowCount);
-    Terrain *terrain = mTileset->addTerrain(name, imageTile);
+    beginInsertRows(tilesetIndex, index, index);
+    tileset->insertTerrain(index, terrain);
     endInsertRows();
+    emit terrainAdded(tileset, index);
+}
+
+/**
+ * Removes the terrain type from the given \a tileset at \a index and returns
+ * it. The caller becomes responsible for the lifetime of the terrain type.
+ * Emits the appropriate signal.
+ *
+ * \warning This will update terrain information of all the tiles in the
+ *          tileset, clearing references to the removed terrain.
+ */
+Terrain *TerrainModel::takeTerrainAt(Tileset *tileset, int index)
+{
+    const QModelIndex tilesetIndex = TerrainModel::index(tileset);
+
+    beginRemoveRows(tilesetIndex, index, index);
+    Terrain *terrain = tileset->takeTerrainAt(index);
+    endRemoveRows();
+    emit terrainRemoved(tileset, index);
+
+    delete mTerrainNodes.take(terrain);
 
     return terrain;
 }
 
-void TerrainModel::removeTerrain(const QModelIndex &index)
+void TerrainModel::setTerrainName(Tileset *tileset, int index, const QString &name)
 {
-    const int row = index.row();
-
-    beginRemoveRows(QModelIndex(), row, row);
-    mTileset->takeTerrainAt(row - 1);
-    endRemoveRows();
+    Terrain *terrain = tileset->terrain(index);
+    terrain->setName(name);
+    emitTerrainChanged(terrain);
 }
 
-void TerrainModel::tilesetChanged()
+void TerrainModel::setTerrainImage(Tileset *tileset, int index, int tileId)
 {
-    beginResetModel();
-    endResetModel();
+    Terrain *terrain = tileset->terrain(index);
+    terrain->setImageTileId(tileId);
+    emitTerrainChanged(terrain);
 }
 
-void TerrainModel::terrainAdded(Tileset *tileset, int terrainId)
+void TerrainModel::emitTerrainChanged(Terrain *terrain)
 {
-    if (mTileset != tileset)
-        return;
-
-    // Wrong... I need to be the one adding terrains
-}
-
-void TerrainModel::terrainRemoved(Tileset *tileset, int terrainId)
-{
-    if (mTileset != tileset)
-        return;
-
-    // Wrong... I need to be the one removing terrains
-}
-
-void TerrainModel::terrainChanged(Tileset *tileset, int terrainId)
-{
-    if (mTileset != tileset)
-        return;
-
-    const QModelIndex topLeft = index(terrainId + 1, 0);
-    const QModelIndex bottomRight = index(terrainId + 1, 1);
+    const QModelIndex topLeft = TerrainModel::index(terrain, 0);
+    const QModelIndex bottomRight = TerrainModel::index(terrain, 1);
     emit dataChanged(topLeft, bottomRight);
+    emit terrainChanged(terrain->tileset(), topLeft.row());
 }

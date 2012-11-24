@@ -46,8 +46,9 @@ class Tileset;
 namespace Internal {
 
 class LayerModel;
-class TileSelectionModel;
 class MapObjectModel;
+class TerrainModel;
+class TileSelectionModel;
 
 /**
  * Represents an editable map. The purpose of this class is to make sure that
@@ -156,11 +157,6 @@ public:
     void setTilesetFileName(Tileset *tileset, const QString &fileName);
     void setTilesetName(Tileset *tileset, const QString &name);
 
-    void insertTerrain(Tileset *tileset, int index, Terrain *terrain);
-    Terrain *takeTerrainAt(Tileset *tileset, int index);
-    void setTerrainName(Tileset *tileset, int index, const QString &name);
-    void setTerrainImage(Tileset *tileset, int index, int tileId);
-
     /**
      * Returns the layer model. Can be used to modify the layer stack of the
      * map, and to display the layer stack in a view.
@@ -168,6 +164,8 @@ public:
     LayerModel *layerModel() const { return mLayerModel; }
 
     MapObjectModel *mapObjectModel() const { return mMapObjectModel; }
+
+    TerrainModel *terrainModel() const { return mTerrainModel; }
 
     /**
      * Returns the map renderer.
@@ -298,14 +296,6 @@ signals:
     void objectsRemoved(const QList<MapObject*> &objects);
     void objectsChanged(const QList<MapObject*> &objects);
 
-    void terrainAdded(Tileset *tileset, int index);
-    void terrainRemoved(Tileset *tileset, int index);
-
-    /**
-     * Emitted when either the name or the image of a terrain changed.
-     */
-    void terrainChanged(Tileset *tileset, int index);
-
 private slots:
     void onObjectsRemoved(const QList<MapObject*> &objects);
 
@@ -334,6 +324,7 @@ private:
     MapRenderer *mRenderer;
     int mCurrentLayerIndex;
     MapObjectModel *mMapObjectModel;
+    TerrainModel *mTerrainModel;
     QUndoStack *mUndoStack;
 };
 

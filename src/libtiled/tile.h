@@ -113,6 +113,11 @@ public:
     unsigned int terrain() const { return this == NULL ? 0xFFFFFFFF : mTerrain; } // HACK: NULL Tile has 'none' terrain type.
 
     /**
+     * Set the terrain for each corner of the tile.
+     */
+    void setTerrain(unsigned int terrain) { mTerrain = terrain; }
+
+    /**
      * Returns the probability of this terrain type appearing while painting (0-100%).
      */
     float terrainProbability() const { return mTerrainProbability; }

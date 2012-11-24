@@ -27,13 +27,8 @@
 #include <QDockWidget>
 #include <QMap>
 
-class QAction;
-class QMenu;
-class QTabBar;
-class QToolBar;
-class QToolButton;
-class QSignalMapper;
-class QStackedWidget;
+class QModelIndex;
+class QTreeView;
 
 namespace Tiled {
 
@@ -87,43 +82,19 @@ signals:
 protected:
     void changeEvent(QEvent *e);
 
-    void dragEnterEvent(QDragEnterEvent *);
-    void dropEvent(QDropEvent *);
-
 private slots:
-    void insertTilesetView(int index, Tileset *tileset);
-    void updateActions();
-    void updateCurrentTiles();
-    void tilesetChanged(Tileset *tileset);
-    void tilesetRemoved(Tileset *tileset);
-    void tilesetMoved(int from, int to);
-    void tilesetNameChanged(Tileset *tileset);
-
-    void removeTileset();
-    void removeTileset(int index);
-    void moveTileset(int from, int to);
-
+    void currentRowChanged(const QModelIndex &index);
     void documentCloseRequested(int index);
-
-    void refreshTerrainMenu();
 
 private:
     void setCurrentTerrain(Terrain *terrain);
     void retranslateUi();
 
-    Tileset *currentTileset() const;
-    TerrainView *terrainViewAt(int index) const;
-
     MapDocument *mMapDocument;
-    QTabBar *mTabBar;
-    QStackedWidget *mViewStack;
+    QTreeView *mTerrainView;
     Terrain *mCurrentTerrain;
 
     QMap<MapDocument *, QString> mCurrentTilesets;
-
-    QToolButton *mTerrainMenuButton;
-    QMenu *mTerrainMenu; //opens on click of mTerraintMenu
-    QSignalMapper *mTerrainMenuMapper; //needed due to dynamic content
 };
 
 } // namespace Internal

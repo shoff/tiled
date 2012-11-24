@@ -48,8 +48,11 @@ EditTerrainDialog::EditTerrainDialog(MapDocument *mapDocument,
     mUi->tilesetView->setMapDocument(mapDocument);
     mUi->tilesetView->setModel(new TilesetModel(mTileset, mUi->tilesetView));
 
-    mTerrainModel = new TerrainModel(mapDocument, mTileset, mUi->terrainList);
+    mTerrainModel = mapDocument->terrainModel();
+    const QModelIndex rootIndex = mTerrainModel->index(tileset);
+
     mUi->terrainList->setModel(mTerrainModel);
+    mUi->terrainList->setRootIndex(rootIndex);
 
     QHeaderView *terrainListHeader = mUi->terrainList->header();
 #if QT_VERSION >= 0x050000
@@ -58,14 +61,14 @@ EditTerrainDialog::EditTerrainDialog(MapDocument *mapDocument,
     terrainListHeader->setResizeMode(0, QHeaderView::ResizeToContents);
 #endif
 
-    QItemSelectionModel *sm = mUi->terrainList->selectionModel();
-    connect(sm, SIGNAL(currentRowChanged(QModelIndex,QModelIndex)),
+    QItemSelectionModel *selectionModel = mUi->terrainList->selectionModel();
+    connect(selectionModel, SIGNAL(currentRowChanged(QModelIndex,QModelIndex)),
             SLOT(selectedTerrainChanged(QModelIndex)));
 
-    if (mTerrainModel->rowCount() > 0) {
-        sm->select(mTerrainModel->index(0, 0),
-                   QItemSelectionModel::SelectCurrent |
-                   QItemSelectionModel::Rows);
+    if (mTerrainModel->rowCount(rootIndex) > 0) {
+        selectionModel->select(mTerrainModel->index(0, 0, rootIndex),
+                               QItemSelectionModel::SelectCurrent |
+                               QItemSelectionModel::Rows);
     }
 
     connect(mUi->addTerrainTypeButton, SIGNAL(clicked()),
@@ -91,9 +94,6 @@ void EditTerrainDialog::selectedTerrainChanged(const QModelIndex &index)
 
 void EditTerrainDialog::addTerrainType()
 {
-    // TODO: Make the model aware of the terrain being added
-//    mTerrainModel->addTerrain(QString(), -1);
-
     Terrain *terrain = new Terrain(mTileset->terrainCount(), mTileset,
                                    QString(), -1);
 
@@ -106,8 +106,6 @@ void EditTerrainDialog::removeTerrainType()
     if (!currentIndex.isValid() || currentIndex.row() == 0)
         return;
 
-    // TODO: Make the model aware of the terrain being removed
-//    mTerrainModel->removeTerrain(currentIndex);
     Terrain *terrain = mTerrainModel->terrainAt(currentIndex);
     mMapDocument->undoStack()->push(new RemoveTerrain(mMapDocument, terrain));
 }

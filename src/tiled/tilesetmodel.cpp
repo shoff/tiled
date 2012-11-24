@@ -68,9 +68,31 @@ QVariant TilesetModel::data(const QModelIndex &index, int role) const
     if (role == Qt::DecorationRole) {
         if (Tile *tile = tileAt(index))
             return tile->image();
+    } else if (role == TerrainRole) {
+        if (Tile *tile = tileAt(index))
+            return tile->terrain();
     }
 
     return QVariant();
+}
+
+bool TilesetModel::setData(const QModelIndex &index, const QVariant &value,
+                           int role)
+{
+    if (role != TerrainRole)
+        return false;
+
+    bool ok;
+    const unsigned terrain = value.toUInt(&ok);
+    Q_ASSERT(ok);
+
+    Tile *tile = tileAt(index);
+    Q_ASSERT(tile);
+
+    // TODO: Undo support
+    tile->setTerrain(terrain);
+    emit dataChanged(index, index);
+    return true;
 }
 
 QVariant TilesetModel::headerData(int /* section */,

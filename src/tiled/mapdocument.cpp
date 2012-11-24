@@ -42,6 +42,7 @@
 #include "resizemap.h"
 #include "staggeredrenderer.h"
 #include "terrain.h"
+#include "terrainmodel.h"
 #include "tile.h"
 #include "tilelayer.h"
 #include "tilesetmanager.h"
@@ -60,6 +61,7 @@ MapDocument::MapDocument(Map *map, const QString &fileName):
     mMap(map),
     mLayerModel(new LayerModel(this)),
     mMapObjectModel(new MapObjectModel(this)),
+    mTerrainModel(new TerrainModel(this, this)),
     mUndoStack(new QUndoStack(this))
 {
     switch (map->orientation()) {
@@ -94,6 +96,14 @@ MapDocument::MapDocument(Map *map, const QString &fileName):
             SIGNAL(objectsAboutToBeRemoved(QList<MapObject*>)));
     connect(mMapObjectModel, SIGNAL(objectsRemoved(QList<MapObject*>)),
             SLOT(onObjectsRemoved(QList<MapObject*>)));
+
+    // Forward signals emitted from the terrain model
+//    connect(mapDocument, SIGNAL(terrainAdded(Tileset*,int)),
+//            SLOT(terrainAdded(Tileset*,int)));
+//    connect(mapDocument, SIGNAL(terrainRemoved(Tileset*,int)),
+//            SLOT(terrainRemoved(Tileset*,int)));
+//    connect(mapDocument, SIGNAL(terrainChanged(Tileset*,int)),
+//            SLOT(terrainChanged(Tileset*,int)));
 
     connect(mUndoStack, SIGNAL(cleanChanged(bool)), SIGNAL(modifiedChanged()));
 
@@ -554,41 +564,4 @@ void MapDocument::setTilesetName(Tileset *tileset, const QString &name)
 {
     tileset->setName(name);
     emit tilesetNameChanged(tileset);
-}
-
-/**
- * Adds a terrain type to the given \a tileset at \a index. Emits the
- * appropriate signal.
- */
-void MapDocument::insertTerrain(Tileset *tileset, int index, Terrain *terrain)
-{
-    tileset->insertTerrain(index, terrain);
-    emit terrainAdded(tileset, index);
-}
-
-/**
- * Removes the terrain type from the given \a tileset at \a index and returns
- * it. The caller becomes responsible for the lifetime of the terrain type.
- * Emits the appropriate signal.
- *
- * \warning This will update terrain information of all the tiles in the
- *          tileset, clearing references to the removed terrain.
- */
-Terrain *MapDocument::takeTerrainAt(Tileset *tileset, int index)
-{
-    Terrain *terrain = tileset->takeTerrainAt(index);
-    emit terrainRemoved(tileset, index);
-    return terrain;
-}
-
-void MapDocument::setTerrainName(Tileset *tileset, int index, const QString &name)
-{
-    tileset->terrain(index)->setName(name);
-    emit terrainChanged(tileset, index);
-}
-
-void MapDocument::setTerrainImage(Tileset *tileset, int index, int tileId)
-{
-    tileset->terrain(index)->setImageTileId(tileId);
-    emit terrainChanged(tileset, index);
 }

@@ -22,6 +22,7 @@
 
 #include "mapdocument.h"
 #include "terrain.h"
+#include "terrainmodel.h"
 #include "tileset.h"
 
 #include <QCoreApplication>
@@ -49,15 +50,13 @@ AddRemoveTerrain::~AddRemoveTerrain()
 void AddRemoveTerrain::removeTerrain()
 {
     Q_ASSERT(!mTerrain);
-    // XXXXXX Use the TerrainModel (tree)
-    mTerrain = mMapDocument->takeTerrainAt(mTileset, mIndex);
+    mTerrain = mMapDocument->terrainModel()->takeTerrainAt(mTileset, mIndex);
 }
 
 void AddRemoveTerrain::addTerrain()
 {
     Q_ASSERT(mTerrain);
-    // XXXXXX Use the TerrainModel (tree)
-    mMapDocument->insertTerrain(mTileset, mIndex, mTerrain);
+    mMapDocument->terrainModel()->insertTerrain(mTileset, mIndex, mTerrain);
     mTerrain = 0;
 }
 

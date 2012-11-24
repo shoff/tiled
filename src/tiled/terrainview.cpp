@@ -75,7 +75,7 @@ void TerrainDelegate::paint(QPainter *painter,
     // Draw the terrain image
     const QVariant display = index.model()->data(index, Qt::DecorationRole);
     const QPixmap terrainImage = display.value<QPixmap>();
-    const int extra = mTerrainView->drawGrid() ? 1 : 0;
+    const int extra = 1;
 
     if (mTerrainView->zoomable()->smoothTransform())
         painter->setRenderHint(QPainter::SmoothPixmapTransform);
@@ -93,15 +93,15 @@ void TerrainDelegate::paint(QPainter *painter,
 }
 
 QSize TerrainDelegate::sizeHint(const QStyleOptionViewItem & /* option */,
-                                const QModelIndex &index) const
+                                const QModelIndex & /* index */) const
 {
-    const TerrainModel *m = static_cast<const TerrainModel*>(index.model());
-    const Tileset *tileset = m->tileset();
-    const qreal zoom = mTerrainView->zoomable()->scale();
-    const int extra = mTerrainView->drawGrid() ? 1 : 0;
+//    const TerrainModel *m = static_cast<const TerrainModel*>(index.model());
+//    const Tileset *tileset = m->tileset();
+//    const qreal zoom = mTerrainView->zoomable()->scale();
 
-    return QSize(tileset->tileWidth() * zoom + extra,
-                 tileset->tileHeight() * zoom + extra);
+//    return QSize(tileset->tileWidth() * zoom + extra,
+//                 tileset->tileHeight() * zoom + extra);
+    return QSize(32, 32);
 }
 
 
@@ -109,23 +109,18 @@ QSize TerrainDelegate::sizeHint(const QStyleOptionViewItem & /* option */,
 } // anonymous namespace
 
 TerrainView::TerrainView(MapDocument *mapDocument, QWidget *parent)
-    : QListView(parent)
+    : QTreeView(parent)
     , mZoomable(new Zoomable(this))
     , mMapDocument(mapDocument)
 {
     setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
     setItemDelegate(new TerrainDelegate(this, this));
 
-    setFlow(QListView::LeftToRight);
-    setResizeMode(QListView::Adjust);
-    setWrapping(true);
-
-    Preferences *prefs = Preferences::instance();
-    mDrawGrid = prefs->showTilesetGrid();
+//    setFlow(QTreeView::LeftToRight);
+//    setResizeMode(QTreeView::Adjust);
+//    setWrapping(true);
 
     connect(mZoomable, SIGNAL(scaleChanged(qreal)), SLOT(adjustScale()));
-    connect(prefs, SIGNAL(showTilesetGridChanged(bool)),
-            SLOT(setDrawGrid(bool)));
 }
 
 QSize TerrainView::sizeHint() const
@@ -145,7 +140,7 @@ void TerrainView::wheelEvent(QWheelEvent *event)
         return;
     }
 
-    QListView::wheelEvent(event);
+    QTreeView::wheelEvent(event);
 }
 
 /**
@@ -157,7 +152,7 @@ void TerrainView::contextMenuEvent(QContextMenuEvent *event)
     const TerrainModel *m = terrainModel();
     Terrain *terrain = m->terrainAt(index);
 
-    const bool isExternal = m->tileset()->isExternal();
+    const bool isExternal = terrain->tileset()->isExternal();
     QMenu menu;
 
     QIcon propIcon(QLatin1String(":images/16x16/document-properties.png"));
@@ -180,15 +175,6 @@ void TerrainView::contextMenuEvent(QContextMenuEvent *event)
     }
 
 
-    menu.addSeparator();
-    QAction *toggleGrid = menu.addAction(tr("Show &Grid"));
-    toggleGrid->setCheckable(true);
-    toggleGrid->setChecked(mDrawGrid);
-
-    Preferences *prefs = Preferences::instance();
-    connect(toggleGrid, SIGNAL(toggled(bool)),
-            prefs, SLOT(setShowTilesetGrid(bool)));
-
     menu.exec(event->globalPos());
 }
 
@@ -206,13 +192,7 @@ void TerrainView::editTerrainProperties()
     propertiesDialog.exec();
 }
 
-void TerrainView::setDrawGrid(bool drawGrid)
-{
-    mDrawGrid = drawGrid;
-    terrainModel()->tilesetChanged();
-}
-
 void TerrainView::adjustScale()
 {
-    terrainModel()->tilesetChanged();
+//    terrainModel()->tilesetChanged();
 }

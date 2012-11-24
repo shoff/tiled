@@ -71,19 +71,146 @@ private:
     TilesetView *mTilesetView;
 };
 
+enum Corners
+{
+    TopLeft = 1,
+    TopRight = 2,
+    BottomLeft = 4,
+    BottomRight = 8
+};
+
+/**
+ * Returns a mask of the corners of a certain tile's \a terrain that contain
+ * the given \a terrainTypeId.
+ */
+static int terrainCorners(unsigned terrain, int terrainTypeId)
+{
+    const unsigned terrainIndex = terrainTypeId >= 0 ? terrainTypeId : 0xFF;
+
+    return (((terrain >> 24) & 0xFF) == terrainIndex ? TopLeft : 0) |
+            (((terrain >> 16) & 0xFF) == terrainIndex ? TopRight : 0) |
+            (((terrain >> 8) & 0xFF) == terrainIndex ? BottomLeft : 0) |
+            ((terrain & 0xFF) == terrainIndex ? BottomRight : 0);
+}
+
+static void paintCorners(QPainter *painter,
+                         int corners,
+                         const QRect &rect)
+{
+    // FIXME: This only works right for orthogonal maps right now
+
+    const int hx = rect.width() / 2;
+    const int hy = rect.height() / 2;
+
+    switch (corners) {
+    case TopLeft:
+        painter->drawPie(rect.translated(-hx, -hy), -90 * 16, 90 * 16);
+        break;
+    case TopRight:
+        painter->drawPie(rect.translated(hx, -hy), 180 * 16, 90 * 16);
+        break;
+    case TopRight | TopLeft:
+        painter->drawRect(rect.x(), rect.y(), rect.width(), hy);
+        break;
+    case BottomLeft:
+        painter->drawPie(rect.translated(-hx, hy), 0, 90 * 16);
+        break;
+    case BottomLeft | TopLeft:
+        painter->drawRect(rect.x(), rect.y(), hx, rect.height());
+        break;
+    case BottomLeft | TopRight:
+        painter->drawPie(rect.translated(-hx, hy), 0, 90 * 16);
+        painter->drawPie(rect.translated(hx, -hy), 180 * 16, 90 * 16);
+        break;
+    case BottomLeft | TopRight | TopLeft: {
+        QPainterPath fill, ellipse;
+        fill.addRect(rect);
+        ellipse.addEllipse(rect.translated(hx, hy));
+        painter->drawPath(fill.subtracted(ellipse));
+        break;
+    }
+    case BottomRight:
+        painter->drawPie(rect.translated(hx, hy), 90 * 16, 90 * 16);
+        break;
+    case BottomRight | TopLeft:
+        painter->drawPie(rect.translated(-hx, -hy), -90 * 16, 90 * 16);
+        painter->drawPie(rect.translated(hx, hy), 90 * 16, 90 * 16);
+        break;
+    case BottomRight | TopRight:
+        painter->drawRect(rect.x() + hx, rect.y(), hx, rect.height());
+        break;
+    case BottomRight | TopRight | TopLeft: {
+        QPainterPath fill, ellipse;
+        fill.addRect(rect);
+        ellipse.addEllipse(rect.translated(-hx, hy));
+        painter->drawPath(fill.subtracted(ellipse));
+        break;
+    }
+    case BottomRight | BottomLeft:
+        painter->drawRect(rect.x(), rect.y() + hy, rect.width(), hy);
+        break;
+    case BottomRight | BottomLeft | TopLeft: {
+        QPainterPath fill, ellipse;
+        fill.addRect(rect);
+        ellipse.addEllipse(rect.translated(hx, -hy));
+        painter->drawPath(fill.subtracted(ellipse));
+        break;
+    }
+    case BottomRight | BottomLeft | TopRight: {
+        QPainterPath fill, ellipse;
+        fill.addRect(rect);
+        ellipse.addEllipse(rect.translated(-hx, -hy));
+        painter->drawPath(fill.subtracted(ellipse));
+        break;
+    }
+    case BottomRight | BottomLeft | TopRight | TopLeft:
+        painter->drawRect(rect);
+        break;
+    }
+}
+
+static void paintTerrainOverlay(QPainter *painter,
+                                unsigned terrain,
+                                int terrainTypeId,
+                                const QRect &rect,
+                                const QColor &color)
+{
+    painter->save();
+    painter->setClipRect(rect);
+    painter->setRenderHint(QPainter::Antialiasing);
+
+    const int corners = terrainCorners(terrain, terrainTypeId);
+
+    // Draw the shadow
+    painter->translate(1, 1);
+    painter->setBrush(Qt::NoBrush);
+    painter->setPen(QPen(Qt::black, 2));
+    paintCorners(painter, corners, rect);
+
+    // Draw the foreground
+    painter->translate(-1, -1);
+    painter->setBrush(QColor(color.red(), color.green(), color.blue(), 100));
+    painter->setPen(QPen(color, 2));
+    paintCorners(painter, corners, rect);
+
+    painter->restore();
+}
+
 void TileDelegate::paint(QPainter *painter,
                          const QStyleOptionViewItem &option,
                          const QModelIndex &index) const
 {
-    const QVariant display = index.model()->data(index, Qt::DecorationRole);
-    const QPixmap tileImage = display.value<QPixmap>();
+    const TilesetModel *model = static_cast<const TilesetModel*>(index.model());
+    const Tile *tile = model->tileAt(index);
+
+    const QPixmap &tileImage = tile->image();
     const int extra = mTilesetView->drawGrid() ? 1 : 0;
     const qreal zoom = mTilesetView->scale();
 
     // Compute rectangle to draw the image in: bottom- and left-aligned
     QRect targetRect = option.rect.adjusted(0, 0, -extra, -extra);
-    targetRect.setTop(targetRect.top() + targetRect.height() - tileImage.height() * zoom);
-    targetRect.setRight(targetRect.right() - targetRect.width() + tileImage.width() * zoom);
+    targetRect.setTop(targetRect.bottom() - tileImage.height() * zoom + 1);
+    targetRect.setRight(targetRect.left() + tileImage.width() * zoom - 1);
 
     // Draw the tile image
     if (Zoomable *zoomable = mTilesetView->zoomable())
@@ -101,54 +228,31 @@ void TileDelegate::paint(QPainter *painter,
     }
 
     if (mTilesetView->isEditTerrain()) {
-        for (int corner = 0; corner < 4; ++corner) {
-            if (static_cast<const TilesetModel*>(index.model())->tileAt(index)->cornerTerrainId(corner) == mTilesetView->terrainId()) {
-                QPoint pos;
-                switch (corner) {
-                case 0: pos = option.rect.topLeft(); break;
-                case 1: pos = option.rect.topRight(); break;
-                case 2: pos = option.rect.bottomLeft(); break;
-                case 3: pos = option.rect.bottomRight(); break;
-                }
+        const unsigned terrain = tile->terrain();
 
-                painter->save();
-                painter->setBrush(Qt::gray);
-                painter->setPen(Qt::NoPen);
-                painter->setClipRect(option.rect.adjusted(0, 0, -extra, -extra));
-                painter->setRenderHint(QPainter::Antialiasing);
-                painter->setOpacity(0.5);
-                painter->drawEllipse(pos, option.rect.width() / 2, option.rect.height() / 2);
-                painter->setOpacity(1);
-                QPen pen(Qt::darkGray);
-                pen.setWidth(2);
-                painter->setPen(pen);
-                painter->drawEllipse(pos, option.rect.width() / 4, option.rect.height() / 4);
-                painter->restore();
-            }
-        }
+        paintTerrainOverlay(painter, terrain,
+                            mTilesetView->terrainId(), targetRect,
+                            option.palette.highlight().color());
 
         // Overlay with terrain corner indication when hovered
         if (index == mTilesetView->hoveredIndex()) {
             QPoint pos;
             switch (mTilesetView->hoveredCorner()) {
-            case 0: pos = option.rect.topLeft(); break;
-            case 1: pos = option.rect.topRight(); break;
-            case 2: pos = option.rect.bottomLeft(); break;
-            case 3: pos = option.rect.bottomRight(); break;
+            case 0: pos = targetRect.topLeft(); break;
+            case 1: pos = targetRect.topRight(); break;
+            case 2: pos = targetRect.bottomLeft(); break;
+            case 3: pos = targetRect.bottomRight(); break;
             }
 
             painter->save();
             painter->setBrush(option.palette.highlight());
-            painter->setPen(Qt::NoPen);
-            painter->setClipRect(option.rect.adjusted(0, 0, -extra, -extra));
+            painter->setClipRect(targetRect);
             painter->setRenderHint(QPainter::Antialiasing);
-            painter->setOpacity(0.5);
-            painter->drawEllipse(pos, option.rect.width() / 2, option.rect.height() / 2);
-            painter->setOpacity(1);
-            QPen pen(option.palette.highlight().color().darker());
-            pen.setWidth(2);
+            QPen pen(option.palette.highlight().color().darker(), 2);
             painter->setPen(pen);
-            painter->drawEllipse(pos, option.rect.width() / 4, option.rect.height() / 4);
+            painter->drawEllipse(pos,
+                                 targetRect.width() / 3,
+                                 targetRect.height() / 3);
             painter->restore();
         }
     }
@@ -166,9 +270,8 @@ QSize TileDelegate::sizeHint(const QStyleOptionViewItem & /* option */,
                  tileset->tileHeight() * zoom + extra);
 }
 
-
-
 } // anonymous namespace
+
 
 TilesetView::TilesetView(QWidget *parent)
     : QTableView(parent)
@@ -441,7 +544,15 @@ void TilesetView::applyTerrain()
     if (!mHoveredIndex.isValid())
         return;
 
-    // Modify the terrain of the tile (TODO: Undo (probably via the TilesetModel))
-    Tile *tile = tilesetModel()->tileAt(mHoveredIndex);
-    tile->setCornerTerrain(mHoveredCorner, mTerrainId);
+    TilesetModel *model = tilesetModel();
+
+    unsigned terrain = model->data(mHoveredIndex,
+                                   TilesetModel::TerrainRole).toUInt();
+
+    // Set the terrain type on the hovered corner
+    unsigned int mask = 0xFF << (3 - mHoveredCorner) * 8;
+    unsigned int insert = mTerrainId << (3 - mHoveredCorner) * 8;
+    terrain = (terrain & ~mask) | (insert & mask);
+
+    model->setData(mHoveredIndex, terrain, TilesetModel::TerrainRole);
 }

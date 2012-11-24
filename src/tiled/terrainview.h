@@ -24,7 +24,7 @@
 
 #include "terrainmodel.h"
 
-#include <QListView>
+#include <QTreeView>
 
 namespace Tiled {
 namespace Internal {
@@ -35,7 +35,7 @@ class Zoomable;
 /**
  * The terrain view. May only be used with the TerrainModel.
  */
-class TerrainView : public QListView
+class TerrainView : public QTreeView
 {
     Q_OBJECT
 
@@ -45,8 +45,6 @@ public:
     QSize sizeHint() const;
 
     Zoomable *zoomable() const { return mZoomable; }
-
-    bool drawGrid() const { return mDrawGrid; }
 
     /**
      * Convenience method that returns the model as a TerrainModel.
@@ -60,14 +58,12 @@ protected:
 
 private slots:
     void editTerrainProperties();
-    void setDrawGrid(bool drawGrid);
 
     void adjustScale();
 
 private:
     Zoomable *mZoomable;
     MapDocument *mMapDocument;
-    bool mDrawGrid;
 };
 
 } // namespace Internal

@@ -222,14 +222,19 @@ public:
     int columnCountForWidth(int width) const;
 
     /**
+     * Returns a const reference to the list of terrains in this tileset.
+     */
+    const QList<Terrain*> &terrains() const { return mTerrainTypes; }
+
+    /**
      * Returns the number of terrain types in this tileset.
      */
     int terrainCount() const { return mTerrainTypes.size(); }
 
     /**
-     * Returns the terrain type at the given index.
+     * Returns the terrain type at the given \a index.
      */
-    Terrain *terrain(int terrain) const { return terrain >= 0 ? mTerrainTypes[terrain] : 0; }
+    Terrain *terrain(int index) const { return index >= 0 ? mTerrainTypes[index] : 0; }
 
     /**
      * Adds a new terrain type.
