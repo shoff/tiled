@@ -103,17 +103,10 @@ TerrainModel::TerrainModel(MapDocument *mapDocument,
     QAbstractItemModel(parent),
     mMapDocument(mapDocument)
 {
-    foreach (Tileset *tileset, mMapDocument->map()->tilesets()) {
-        mTilesetNodes.insert(tileset, new Node(tileset));
-        foreach (Terrain *terrain, tileset->terrains())
-            mTerrainNodes.insert(terrain, new Node(terrain));
-    }
 }
 
 TerrainModel::~TerrainModel()
 {
-    qDeleteAll(mTilesetNodes);
-    qDeleteAll(mTerrainNodes);
 }
 
 QModelIndex TerrainModel::index(int row, int column, const QModelIndex &parent) const
@@ -121,13 +114,10 @@ QModelIndex TerrainModel::index(int row, int column, const QModelIndex &parent) 
     if (!hasIndex(row, column, parent))
         return QModelIndex();
 
-    if (!parent.isValid()) {
-        Tileset *tileset = mMapDocument->map()->tilesetAt(row);
-        return createIndex(row, column, mTilesetNodes.value(tileset));
-    } else if (Tileset *tileset = tilesetAt(parent)) {
-        Terrain *terrain = tileset->terrain(row);
-        return createIndex(row, column, mTerrainNodes.value(terrain));
-    }
+    if (!parent.isValid())
+        return createIndex(row, column);
+    else if (Tileset *tileset = tilesetAt(parent))
+        return createIndex(row, column, tileset);
 
     return QModelIndex();
 }
@@ -135,20 +125,15 @@ QModelIndex TerrainModel::index(int row, int column, const QModelIndex &parent) 
 QModelIndex TerrainModel::index(Tileset *tileset) const
 {
     int row = mMapDocument->map()->tilesets().indexOf(tileset);
-    Node *node = mTilesetNodes.value(tileset);
     Q_ASSERT(row != -1);
-    Q_ASSERT(node);
-
-    return createIndex(row, 0, node);
+    return createIndex(row, 0);
 }
 
 QModelIndex TerrainModel::index(Terrain *terrain, int column) const
 {
-    int row = terrain->tileset()->terrains().indexOf(terrain);
-    Node *node = mTerrainNodes.value(terrain);
-    Q_ASSERT(node);
-
-    return createIndex(row, column, node);
+    Tileset *tileset = terrain->tileset();
+    int row = tileset->terrains().indexOf(terrain);
+    return createIndex(row, column, tileset);
 }
 
 QModelIndex TerrainModel::parent(const QModelIndex &child) const
@@ -237,12 +222,10 @@ Tileset *TerrainModel::tilesetAt(const QModelIndex &index) const
 {
     if (!index.isValid())
         return 0;
+    if (index.parent().isValid()) // tilesets don't have parents
+        return 0;
 
-    Node *node = static_cast<Node*>(index.internalPointer());
-    if (node->isTileset())
-        return node->tileset;
-
-    return 0;
+    return mMapDocument->map()->tilesetAt(index.row());
 }
 
 Terrain *TerrainModel::terrainAt(const QModelIndex &index) const
@@ -250,9 +233,8 @@ Terrain *TerrainModel::terrainAt(const QModelIndex &index) const
     if (!index.isValid())
         return 0;
 
-    Node *node = static_cast<Node*>(index.internalPointer());
-    if (node->isTerrain())
-        return node->terrain;
+    if (Tileset *tileset = static_cast<Tileset*>(index.internalPointer()))
+        return tileset->terrain(index.row());
 
     return 0;
 }
@@ -264,8 +246,6 @@ Terrain *TerrainModel::terrainAt(const QModelIndex &index) const
 void TerrainModel::insertTerrain(Tileset *tileset, int index, Terrain *terrain)
 {
     const QModelIndex tilesetIndex = TerrainModel::index(tileset);
-
-    mTerrainNodes.insert(terrain, new Node(terrain));
 
     beginInsertRows(tilesetIndex, index, index);
     tileset->insertTerrain(index, terrain);
@@ -289,8 +269,6 @@ Terrain *TerrainModel::takeTerrainAt(Tileset *tileset, int index)
     Terrain *terrain = tileset->takeTerrainAt(index);
     endRemoveRows();
     emit terrainRemoved(tileset, index);
-
-    delete mTerrainNodes.take(terrain);
 
     return terrain;
 }

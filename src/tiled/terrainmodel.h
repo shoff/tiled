@@ -122,35 +122,9 @@ signals:
     void terrainChanged(Tileset *tileset, int index);
 
 private:
-    // TODO: Get rid of this class. Should be possible when:
-    //  index.internalPointer is only set for terrains
-    //  when it is not set, it points to tilesetAt(row)
-    //  when it is set, it points to tileset->terrainAt(row)
-    struct Node
-    {
-        enum NodeType {
-            TilesetNode,
-            TerrainNode
-        };
-
-        Node(Tileset *tileset) : type(TilesetNode), tileset(tileset) {}
-        Node(Terrain *terrain) : type(TerrainNode), terrain(terrain) {}
-
-        bool isTileset() const { return type == TilesetNode; }
-        bool isTerrain() const { return type == TerrainNode; }
-
-        NodeType type;
-        union {
-            Tileset *tileset;
-            Terrain *terrain;
-        };
-    };
-
     void emitTerrainChanged(Terrain *terrain);
 
     MapDocument *mMapDocument;
-    QHash<Tileset*, Node*> mTilesetNodes;
-    QHash<Terrain*, Node*> mTerrainNodes;
 };
 
 } // namespace Internal
