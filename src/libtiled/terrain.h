@@ -113,7 +113,7 @@ public:
     /**
      * Returns the array of terrain penalties(/distances).
      */
-    void setTransitionDistances(QVector<int> &transitionDistances) { mTransitionDistance = transitionDistances; }
+    void setTransitionDistances(const QVector<int> &transitionDistances) { mTransitionDistance = transitionDistances; }
 
 private:
     int mId;

@@ -15,31 +15,99 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
-      <widget class="QTreeView" name="terrainList">
-       <property name="maximumSize">
+      <widget class="QToolButton" name="undo">
+       <property name="toolTip">
+        <string>Undo</string>
+       </property>
+       <property name="text">
+        <string>Undo</string>
+       </property>
+       <property name="icon">
+        <iconset theme="edit-undo" resource="tiled.qrc">
+         <normaloff>:/images/24x24/edit-undo.png</normaloff>:/images/24x24/edit-undo.png</iconset>
+       </property>
+       <property name="autoRaise">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="redo">
+       <property name="toolTip">
+        <string>Redo</string>
+       </property>
+       <property name="text">
+        <string>Redo</string>
+       </property>
+       <property name="icon">
+        <iconset theme="edit-redo" resource="tiled.qrc">
+         <normaloff>:/images/24x24/edit-redo.png</normaloff>:/images/24x24/edit-redo.png</iconset>
+       </property>
+       <property name="autoRaise">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
         <size>
-         <width>200</width>
-         <height>16777215</height>
+         <width>40</width>
+         <height>20</height>
         </size>
        </property>
-       <property name="verticalScrollMode">
-        <enum>QAbstractItemView::ScrollPerPixel</enum>
-       </property>
-       <property name="indentation">
-        <number>0</number>
-       </property>
-       <property name="rootIsDecorated">
-        <bool>false</bool>
-       </property>
-       <property name="itemsExpandable">
-        <bool>false</bool>
-       </property>
-       <attribute name="headerVisible">
-        <bool>false</bool>
-       </attribute>
-      </widget>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QComboBox" name="zoomComboBox"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QPushButton" name="clearTerrain">
+         <property name="text">
+          <string>No Terrain</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="Tiled::Internal::TerrainView" name="terrainList">
+         <property name="maximumSize">
+          <size>
+           <width>200</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="verticalScrollMode">
+          <enum>QAbstractItemView::ScrollPerPixel</enum>
+         </property>
+         <property name="indentation">
+          <number>0</number>
+         </property>
+         <property name="rootIsDecorated">
+          <bool>false</bool>
+         </property>
+         <property name="itemsExpandable">
+          <bool>false</bool>
+         </property>
+         <attribute name="headerVisible">
+          <bool>false</bool>
+         </attribute>
+        </widget>
+       </item>
+      </layout>
      </item>
      <item>
       <widget class="Tiled::Internal::TilesetView" name="tilesetView">
@@ -130,6 +198,11 @@
    <class>Tiled::Internal::TilesetView</class>
    <extends>QTableView</extends>
    <header location="global">tilesetview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>Tiled::Internal::TerrainView</class>
+   <extends>QTreeView</extends>
+   <header location="global">terrainview.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>

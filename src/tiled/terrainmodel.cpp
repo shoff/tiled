@@ -1,6 +1,6 @@
 /*
  * terrainmodel.cpp
- * Copyright 2008-2009, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
+ * Copyright 2008-2012, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
  * Copyright 2009, Edward Hutchins <eah1@yahoo.com>
  * Copyright 2012, Manu Evans <turkeyman@gmail.com>
  *
@@ -45,7 +45,7 @@ public:
                   const QString &newName)
         : QUndoCommand(QCoreApplication::translate("Undo Commands",
                                                    "Change Terrain Name"))
-        , mMapDocument(mapDocument)
+        , mTerrainModel(mapDocument->terrainModel())
         , mTileset(tileset)
         , mTerrainId(terrainId)
         , mOldName(tileset->terrain(terrainId)->name())
@@ -53,47 +53,17 @@ public:
     {}
 
     void undo()
-    { mMapDocument->terrainModel()->setTerrainName(mTileset, mTerrainId, mOldName); }
+    { mTerrainModel->setTerrainName(mTileset, mTerrainId, mOldName); }
 
     void redo()
-    { mMapDocument->terrainModel()->setTerrainName(mTileset, mTerrainId, mNewName); }
+    { mTerrainModel->setTerrainName(mTileset, mTerrainId, mNewName); }
 
 private:
-    MapDocument *mMapDocument;
+    TerrainModel *mTerrainModel;
     Tileset *mTileset;
     int mTerrainId;
     QString mOldName;
     QString mNewName;
-};
-
-class SetTerrainImage : public QUndoCommand
-{
-public:
-    SetTerrainImage(MapDocument *mapDocument,
-                    Tileset *tileset,
-                    int terrainId,
-                    int tileId)
-        : QUndoCommand(QCoreApplication::translate("Undo Commands",
-                                                   "Change Terrain Image"))
-        , mMapDocument(mapDocument)
-        , mTileset(tileset)
-        , mTerrainId(terrainId)
-        , mOldImageTileId(tileset->terrain(terrainId)->imageTileId())
-        , mNewImageTileId(tileId)
-    {}
-
-    void undo()
-    { mMapDocument->terrainModel()->setTerrainImage(mTileset, mTerrainId, mOldImageTileId); }
-
-    void redo()
-    { mMapDocument->terrainModel()->setTerrainImage(mTileset, mTerrainId, mNewImageTileId); }
-
-private:
-    MapDocument *mMapDocument;
-    Tileset *mTileset;
-    int mTerrainId;
-    int mOldImageTileId;
-    int mNewImageTileId;
 };
 
 } // anonymous namespace
@@ -191,8 +161,10 @@ bool TerrainModel::setData(const QModelIndex &index,
         const QString newName = value.toString();
         Terrain *terrain = terrainAt(index);
         if (terrain->name() != newName) {
-            RenameTerrain *rename = new RenameTerrain(mMapDocument, terrain->tileset(),
-                                                      terrain->id(), newName);
+            RenameTerrain *rename = new RenameTerrain(mMapDocument,
+                                                      terrain->tileset(),
+                                                      terrain->id(),
+                                                      newName);
             mMapDocument->undoStack()->push(rename);
         }
         return true;

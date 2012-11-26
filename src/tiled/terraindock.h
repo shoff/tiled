@@ -91,7 +91,7 @@ private:
     void retranslateUi();
 
     MapDocument *mMapDocument;
-    QTreeView *mTerrainView;
+    TerrainView *mTerrainView;
     Terrain *mCurrentTerrain;
 
     QMap<MapDocument *, QString> mCurrentTilesets;

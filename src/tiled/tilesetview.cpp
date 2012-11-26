@@ -363,7 +363,7 @@ qreal TilesetView::scale() const
 
 bool TilesetView::event(QEvent *event)
 {
-    if (event->type() == QEvent::Gesture) {
+    if (mZoomable && event->type() == QEvent::Gesture) {
         QGestureEvent *gestureEvent = static_cast<QGestureEvent *>(event);
         if (QGesture *gesture = gestureEvent->gesture(Qt::PinchGesture))
             mZoomable->handlePinchGesture(static_cast<QPinchGesture *>(gesture));
@@ -416,7 +416,6 @@ void TilesetView::mouseMoveEvent(QMouseEvent *event)
 
     if (hoveredIndex.isValid()) {
         const QPoint center = visualRect(hoveredIndex).center();
-        qDebug() << pos << center;
 
         if (pos.x() > center.x())
             hoveredCorner += 1;
@@ -455,8 +454,9 @@ void TilesetView::leaveEvent(QEvent *event)
  */
 void TilesetView::wheelEvent(QWheelEvent *event)
 {
-    if (event->modifiers() & Qt::ControlModifier
-        && event->orientation() == Qt::Vertical)
+    if (mZoomable &&
+            event->modifiers() & Qt::ControlModifier &&
+            event->orientation() == Qt::Vertical)
     {
         mZoomable->handleWheelDelta(event->delta());
         return;
@@ -489,6 +489,12 @@ void TilesetView::contextMenuEvent(QContextMenuEvent *event)
                                           QItemSelectionModel::SelectCurrent |
                                           QItemSelectionModel::Clear);
 
+        if (mEditTerrain && mTerrainId != -1) {
+            QAction *setImage = menu.addAction(tr("Set As Terrain Image"));
+            setImage->setEnabled(!isExternal);
+            connect(setImage, SIGNAL(triggered()), SLOT(selectTerrainImage()));
+        }
+
         QAction *tileProperties = menu.addAction(propIcon,
                                                  tr("Tile &Properties..."));
         tileProperties->setEnabled(!isExternal);
@@ -512,10 +518,15 @@ void TilesetView::contextMenuEvent(QContextMenuEvent *event)
     menu.exec(event->globalPos());
 }
 
+void TilesetView::selectTerrainImage()
+{
+    if (Tile *tile = currentTile())
+        emit terrainImageSelected(tile);
+}
+
 void TilesetView::editTileProperties()
 {
-    const TilesetModel *m = tilesetModel();
-    Tile *tile = m->tileAt(selectionModel()->currentIndex());
+    Tile *tile = currentTile();
     if (!tile)
         return;
 
@@ -555,4 +566,10 @@ void TilesetView::applyTerrain()
     terrain = (terrain & ~mask) | (insert & mask);
 
     model->setData(mHoveredIndex, terrain, TilesetModel::TerrainRole);
+}
+
+Tile *TilesetView::currentTile() const
+{
+    const TilesetModel *model = tilesetModel();
+    return model ? model->tileAt(currentIndex()) : 0;
 }

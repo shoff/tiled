@@ -40,9 +40,9 @@ class TerrainView : public QTreeView
     Q_OBJECT
 
 public:
-    TerrainView(MapDocument *mapDocument, QWidget *parent = 0);
+    TerrainView(QWidget *parent = 0);
 
-    QSize sizeHint() const;
+    void setMapDocument(MapDocument *mapDocument);
 
     Zoomable *zoomable() const { return mZoomable; }
 

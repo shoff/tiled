@@ -53,9 +53,9 @@ namespace {
 class TerrainDelegate : public QAbstractItemDelegate
 {
 public:
-    TerrainDelegate(TerrainView *tilesetView, QObject *parent = 0)
+    TerrainDelegate(TerrainView *terrainView, QObject *parent = 0)
         : QAbstractItemDelegate(parent)
-        , mTerrainView(tilesetView)
+        , mTerrainView(terrainView)
     { }
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option,
@@ -108,13 +108,16 @@ QSize TerrainDelegate::sizeHint(const QStyleOptionViewItem & /* option */,
 
 } // anonymous namespace
 
-TerrainView::TerrainView(MapDocument *mapDocument, QWidget *parent)
+TerrainView::TerrainView(QWidget *parent)
     : QTreeView(parent)
     , mZoomable(new Zoomable(this))
-    , mMapDocument(mapDocument)
+    , mMapDocument(0)
 {
     setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-    setItemDelegate(new TerrainDelegate(this, this));
+    setRootIsDecorated(false);
+    setIndentation(0);
+    setItemsExpandable(false);
+//    setItemDelegate(new TerrainDelegate(this, this));
 
 //    setFlow(QTreeView::LeftToRight);
 //    setResizeMode(QTreeView::Adjust);
@@ -123,9 +126,9 @@ TerrainView::TerrainView(MapDocument *mapDocument, QWidget *parent)
     connect(mZoomable, SIGNAL(scaleChanged(qreal)), SLOT(adjustScale()));
 }
 
-QSize TerrainView::sizeHint() const
+void TerrainView::setMapDocument(MapDocument *mapDocument)
 {
-    return QSize(130, 100);
+    mMapDocument = mapDocument;
 }
 
 /**
@@ -158,12 +161,6 @@ void TerrainView::contextMenuEvent(QContextMenuEvent *event)
     QIcon propIcon(QLatin1String(":images/16x16/document-properties.png"));
 
     if (terrain) {
-        // Select this terrain to make sure it is clear that only the properties
-        // of a single terrain are being edited.
-        selectionModel()->setCurrentIndex(index,
-                                          QItemSelectionModel::SelectCurrent |
-                                          QItemSelectionModel::Clear);
-
         QAction *terrainProperties = menu.addAction(propIcon,
                                                  tr("Terrain &Properties..."));
         terrainProperties->setEnabled(!isExternal);
@@ -173,7 +170,6 @@ void TerrainView::contextMenuEvent(QContextMenuEvent *event)
         connect(terrainProperties, SIGNAL(triggered()),
                 SLOT(editTerrainProperties()));
     }
-
 
     menu.exec(event->globalPos());
 }

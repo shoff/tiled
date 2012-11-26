@@ -31,6 +31,7 @@ class EditTerrainDialog;
 
 namespace Tiled {
 
+class Tile;
 class Tileset;
 
 namespace Internal {
@@ -51,8 +52,10 @@ public:
 
 private slots:
     void selectedTerrainChanged(const QModelIndex &index);
+    void clearTerrainToggled(bool checked);
     void addTerrainType();
     void removeTerrainType();
+    void setTerrainImage(Tile *tile);
     
 private:
     Ui::EditTerrainDialog *mUi;

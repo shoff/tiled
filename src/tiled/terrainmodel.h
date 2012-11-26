@@ -1,6 +1,6 @@
 /*
  * terrainmodel.h
- * Copyright 2008-2009, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
+ * Copyright 2008-2012, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
  * Copyright 2009, Edward Hutchins <eah1@yahoo.com>
  * Copyright 2012, Manu Evans <turkeyman@gmail.com>
  *

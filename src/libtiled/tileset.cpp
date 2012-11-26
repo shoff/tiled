@@ -134,8 +134,20 @@ void Tileset::insertTerrain(int index, Terrain *terrain)
     for (int terrainId = index; terrainId < mTerrainTypes.size(); ++terrainId)
         mTerrainTypes.at(terrainId)->setId(terrainId);
 
-    // TODO: Adjust all references to existing terrain IDs by the tiles and the
-    // transition distances...
+    // Adjust tile terrain references
+    foreach (Tile *tile, mTiles) {
+        for (int corner = 0; corner < 4; ++corner) {
+            const int terrainId = tile->cornerTerrainId(corner);
+            if (terrainId >= index)
+                tile->setCornerTerrain(corner, terrainId + 1);
+        }
+    }
+
+    // Recalculate transition distances...
+    // TODO: Maybe just mark as dirty
+    foreach (Terrain *terrain, mTerrainTypes)
+        terrain->setTransitionDistances(QVector<int>());
+    calculateTerrainDistances();
 }
 
 Terrain *Tileset::takeTerrainAt(int index)
@@ -147,8 +159,23 @@ Terrain *Tileset::takeTerrainAt(int index)
     for (int terrainId = index; terrainId < mTerrainTypes.size(); ++terrainId)
         mTerrainTypes.at(terrainId)->setId(terrainId);
 
-    // TODO: Adjust all references to these terrain IDs by the tiles and the
-    // transition distances...
+    // Clear and adjust tile terrain references
+    foreach (Tile *tile, mTiles) {
+        for (int corner = 0; corner < 4; ++corner) {
+            const int terrainId = tile->cornerTerrainId(corner);
+            if (terrainId == index)
+                tile->setCornerTerrain(corner, 0xFF);
+            else if (terrainId > index)
+                tile->setCornerTerrain(corner, terrainId - 1);
+        }
+    }
+
+    // Recalculate transition distances...
+    // TODO: Maybe just mark as dirty
+    foreach (Terrain *terrain, mTerrainTypes)
+        terrain->setTransitionDistances(QVector<int>());
+    calculateTerrainDistances();
+
     return terrain;
 }
 

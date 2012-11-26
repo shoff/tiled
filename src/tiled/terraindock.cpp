@@ -27,7 +27,7 @@
 //#include "map.h"
 //#include "mapdocument.h"
 #include "terrainmodel.h"
-//#include "terrainview.h"
+#include "terrainview.h"
 
 #include <QEvent>
 #include <QHBoxLayout>
@@ -39,15 +39,12 @@ using namespace Tiled::Internal;
 TerrainDock::TerrainDock(QWidget *parent):
     QDockWidget(parent),
     mMapDocument(0),
+    mTerrainView(new TerrainView),
     mCurrentTerrain(0)
 {
     setObjectName(QLatin1String("TerrainDock"));
 
     QWidget *w = new QWidget(this);
-
-    mTerrainView = new QTreeView;
-    mTerrainView->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-    mTerrainView->setRootIsDecorated(false);
 
     QHBoxLayout *horizontal = new QHBoxLayout(w);
     horizontal->setSpacing(5);
@@ -83,6 +80,7 @@ void TerrainDock::setMapDocument(MapDocument *mapDocument)
 
     QItemSelectionModel *oldSelectionModel = mTerrainView->selectionModel();
     if (mMapDocument) {
+        mTerrainView->setMapDocument(mMapDocument);
         mTerrainView->setModel(mMapDocument->terrainModel());
         mTerrainView->expandAll();
 

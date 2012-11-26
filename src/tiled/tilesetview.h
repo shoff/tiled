@@ -95,6 +95,9 @@ public:
     QModelIndex hoveredIndex() const { return mHoveredIndex; }
     int hoveredCorner() const { return mHoveredCorner; }
 
+signals:
+    void terrainImageSelected(Tile *tile);
+
 protected:
     bool event(QEvent *event);
     void mousePressEvent(QMouseEvent *event);
@@ -104,6 +107,7 @@ protected:
     void contextMenuEvent(QContextMenuEvent *event);
 
 private slots:
+    void selectTerrainImage();
     void editTileProperties();
     void setDrawGrid(bool drawGrid);
 
@@ -111,6 +115,7 @@ private slots:
 
 private:
     void applyTerrain();
+    Tile *currentTile() const;
 
     Zoomable *mZoomable;
     MapDocument *mMapDocument;
