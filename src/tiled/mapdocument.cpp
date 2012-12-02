@@ -97,14 +97,6 @@ MapDocument::MapDocument(Map *map, const QString &fileName):
     connect(mMapObjectModel, SIGNAL(objectsRemoved(QList<MapObject*>)),
             SLOT(onObjectsRemoved(QList<MapObject*>)));
 
-    // Forward signals emitted from the terrain model
-//    connect(mapDocument, SIGNAL(terrainAdded(Tileset*,int)),
-//            SLOT(terrainAdded(Tileset*,int)));
-//    connect(mapDocument, SIGNAL(terrainRemoved(Tileset*,int)),
-//            SLOT(terrainRemoved(Tileset*,int)));
-//    connect(mapDocument, SIGNAL(terrainChanged(Tileset*,int)),
-//            SLOT(terrainChanged(Tileset*,int)));
-
     connect(mUndoStack, SIGNAL(cleanChanged(bool)), SIGNAL(modifiedChanged()));
 
     // Register tileset references
@@ -498,6 +490,12 @@ void MapDocument::emitRegionChanged(const QRegion &region)
 void MapDocument::emitRegionEdited(const QRegion &region, Layer *layer)
 {
     emit regionEdited(region, layer);
+}
+
+void MapDocument::emitTileTerrainChanged(const QList<Tile *> &tiles)
+{
+    if (!tiles.isEmpty())
+        emit tileTerrainChanged(tiles);
 }
 
 /**

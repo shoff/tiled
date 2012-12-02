@@ -113,6 +113,18 @@ Tile *TilesetModel::tileAt(const QModelIndex &index) const
     return mTileset->tileAt(i);
 }
 
+QModelIndex TilesetModel::tileIndex(const Tile *tile) const
+{
+    Q_ASSERT(tile->tileset() == mTileset);
+
+    const int columnCount = TilesetModel::columnCount();
+    const int id = tile->id();
+    const int row = id / columnCount;
+    const int column = id % columnCount;
+
+    return index(row, column);
+}
+
 void TilesetModel::setTileset(Tileset *tileset)
 {
     if (mTileset == tileset)
@@ -127,4 +139,34 @@ void TilesetModel::tilesetChanged()
 {
     beginResetModel();
     endResetModel();
+}
+
+void TilesetModel::tilesChanged(const QList<Tile *> &tiles)
+{
+    if (tiles.first()->tileset() != mTileset)
+        return;
+
+    QModelIndex topLeft;
+    QModelIndex bottomRight;
+
+    foreach (const Tile *tile, tiles) {
+        const QModelIndex i = tileIndex(tile);
+
+        if (!topLeft.isValid()) {
+            topLeft = i;
+            bottomRight = i;
+            continue;
+        }
+
+        if (i.row() < topLeft.row() || i.column() < topLeft.column())
+            topLeft = index(qMin(topLeft.row(), i.row()),
+                            qMin(topLeft.column(), i.column()));
+
+        if (i.row() > bottomRight.row() || i.column() > bottomRight.column())
+            bottomRight = index(qMax(bottomRight.row(), i.row()),
+                                qMax(bottomRight.column(), i.column()));
+    }
+
+    if (topLeft.isValid())
+        emit dataChanged(topLeft, bottomRight);
 }

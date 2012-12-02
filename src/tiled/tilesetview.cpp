@@ -20,6 +20,7 @@
 
 #include "tilesetview.h"
 
+#include "changetileterrain.h"
 #include "map.h"
 #include "mapdocument.h"
 #include "preferences.h"
@@ -279,6 +280,8 @@ TilesetView::TilesetView(QWidget *parent)
     , mMapDocument(0)
     , mEditTerrain(false)
     , mTerrainId(-1)
+    , mHoveredCorner(0)
+    , mTerrainChanged(false)
 {
     setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
     setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
@@ -438,6 +441,17 @@ void TilesetView::mouseMoveEvent(QMouseEvent *event)
         applyTerrain();
 }
 
+void TilesetView::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (!mEditTerrain) {
+        QTableView::mouseReleaseEvent(event);
+        return;
+    }
+
+    if (event->button() == Qt::LeftButton)
+        finishTerrainChange();
+}
+
 void TilesetView::leaveEvent(QEvent *event)
 {
     if (mHoveredIndex.isValid()) {
@@ -555,17 +569,33 @@ void TilesetView::applyTerrain()
     if (!mHoveredIndex.isValid())
         return;
 
-    TilesetModel *model = tilesetModel();
+    Tile *tile = tilesetModel()->tileAt(mHoveredIndex);
+    if (!tile)
+        return;
 
-    unsigned terrain = model->data(mHoveredIndex,
-                                   TilesetModel::TerrainRole).toUInt();
+    unsigned terrain = tile->terrain();
 
     // Set the terrain type on the hovered corner
     unsigned int mask = 0xFF << (3 - mHoveredCorner) * 8;
     unsigned int insert = mTerrainId << (3 - mHoveredCorner) * 8;
     terrain = (terrain & ~mask) | (insert & mask);
 
-    model->setData(mHoveredIndex, terrain, TilesetModel::TerrainRole);
+    if (terrain == tile->terrain())
+        return;
+
+    QUndoCommand *command = new ChangeTileTerrain(mMapDocument, tile, terrain);
+    mMapDocument->undoStack()->push(command);
+    mTerrainChanged = true;
+}
+
+void TilesetView::finishTerrainChange()
+{
+    if (!mTerrainChanged)
+        return;
+
+    // Prevent further merging since mouse was released
+    mMapDocument->undoStack()->push(new ChangeTileTerrain);
+    mTerrainChanged = false;
 }
 
 Tile *TilesetView::currentTile() const

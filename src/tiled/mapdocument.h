@@ -41,6 +41,7 @@ class Map;
 class MapObject;
 class MapRenderer;
 class Terrain;
+class Tile;
 class Tileset;
 
 namespace Internal {
@@ -229,6 +230,12 @@ public:
     void emitRegionEdited(const QRegion &region, Layer *layer);
 
     /**
+     * Emits the signal notifying tileset models about changes to tile terrain
+     * information. All the \a tiles need to be from the same tileset.
+     */
+    void emitTileTerrainChanged(const QList<Tile*> &tiles);
+
+    /**
      * Emits the editLayerNameRequested signal, to get renamed.
      */
     inline void emitEditLayerNameRequested()
@@ -284,6 +291,12 @@ signals:
      * If multiple layers have been edited, multiple signals will be emitted.
      */
     void regionEdited(const QRegion &region, Layer *layer);
+
+    /**
+     * Emitted when the terrain information for the given list of tiles was
+     * changed. All the tiles are guaranteed to be from the same tileset.
+     */
+    void tileTerrainChanged(const QList<Tile*> &tiles);
 
     void tilesetAdded(int index, Tileset *tileset);
     void tilesetRemoved(Tileset *tileset);

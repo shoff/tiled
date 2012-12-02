@@ -71,8 +71,6 @@ private:
 } // anonymous namespace
 
 
-// TODO: Terrain delegate
-
 EditTerrainDialog::EditTerrainDialog(MapDocument *mapDocument,
                                      Tileset *tileset,
                                      QWidget *parent)
@@ -87,10 +85,14 @@ EditTerrainDialog::EditTerrainDialog(MapDocument *mapDocument,
     Zoomable *zoomable = new Zoomable(this);
     zoomable->connectToComboBox(mUi->zoomComboBox);
 
+    TilesetModel *tilesetModel = new TilesetModel(mTileset, mUi->tilesetView);
+    connect(mapDocument, SIGNAL(tileTerrainChanged(QList<Tile*>)),
+            tilesetModel, SLOT(tilesChanged(QList<Tile*>)));
+
     mUi->tilesetView->setEditTerrain(true);
     mUi->tilesetView->setMapDocument(mapDocument);
     mUi->tilesetView->setZoomable(zoomable);
-    mUi->tilesetView->setModel(new TilesetModel(mTileset, mUi->tilesetView));
+    mUi->tilesetView->setModel(tilesetModel);
 
     mTerrainModel = mapDocument->terrainModel();
     const QModelIndex rootIndex = mTerrainModel->index(tileset);

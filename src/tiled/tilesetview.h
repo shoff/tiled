@@ -102,6 +102,7 @@ protected:
     bool event(QEvent *event);
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
+    void mouseReleaseEvent(QMouseEvent *event);
     void leaveEvent(QEvent *);
     void wheelEvent(QWheelEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);
@@ -115,6 +116,7 @@ private slots:
 
 private:
     void applyTerrain();
+    void finishTerrainChange();
     Tile *currentTile() const;
 
     Zoomable *mZoomable;
@@ -125,6 +127,7 @@ private:
     int mTerrainId;
     QModelIndex mHoveredIndex;
     int mHoveredCorner;
+    bool mTerrainChanged;
 };
 
 } // namespace Internal
