@@ -56,10 +56,13 @@ private slots:
     void addTerrainType();
     void removeTerrainType();
     void setTerrainImage(Tile *tile);
+
+    void updateUndoButton();
     
 private:
     Ui::EditTerrainDialog *mUi;
     MapDocument *mMapDocument;
+    int mInitialUndoStackIndex;
     Tileset *mTileset;
     TerrainModel *mTerrainModel;
 };

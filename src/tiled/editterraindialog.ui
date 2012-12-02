@@ -18,6 +18,9 @@
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
       <widget class="QToolButton" name="undo">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="toolTip">
         <string>Undo</string>
        </property>
@@ -35,6 +38,9 @@
      </item>
      <item>
       <widget class="QToolButton" name="redo">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="toolTip">
         <string>Redo</string>
        </property>

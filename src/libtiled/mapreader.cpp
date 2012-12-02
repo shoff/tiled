@@ -444,7 +444,7 @@ void MapReaderPrivate::readTilesetTerrainTypes(Tileset *tileset)
             QString name = atts.value(QLatin1String("name")).toString();
             int tile = atts.value(QLatin1String("tile")).toString().toInt();
 
-            /*Terrain *terrain = */tileset->addTerrain(name, tile);
+            Terrain *terrain = tileset->addTerrain(name, tile);
 
 //            QString distances = atts.value(QLatin1String("distances")).toString();
 //            if (!distances.isEmpty()) {
@@ -457,10 +457,15 @@ void MapReaderPrivate::readTilesetTerrainTypes(Tileset *tileset)
 //                terrain->setTransitionDistances(dist);
 //            }
 
-            xml.skipCurrentElement();
-        }
-        else
+            while (xml.readNextStartElement()) {
+                if (xml.name() == QLatin1String("properties"))
+                    terrain->mergeProperties(readProperties());
+                else
+                    readUnknownElement();
+            }
+        } else {
             readUnknownElement();
+        }
     }
 }
 

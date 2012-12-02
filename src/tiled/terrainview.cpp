@@ -119,10 +119,6 @@ TerrainView::TerrainView(QWidget *parent)
     setItemsExpandable(false);
 //    setItemDelegate(new TerrainDelegate(this, this));
 
-//    setFlow(QTreeView::LeftToRight);
-//    setResizeMode(QTreeView::Adjust);
-//    setWrapping(true);
-
     connect(mZoomable, SIGNAL(scaleChanged(qreal)), SLOT(adjustScale()));
 }
 
@@ -154,22 +150,22 @@ void TerrainView::contextMenuEvent(QContextMenuEvent *event)
     const QModelIndex index = indexAt(event->pos());
     const TerrainModel *m = terrainModel();
     Terrain *terrain = m->terrainAt(index);
+    if (!terrain)
+        return;
 
     const bool isExternal = terrain->tileset()->isExternal();
     QMenu menu;
 
     QIcon propIcon(QLatin1String(":images/16x16/document-properties.png"));
 
-    if (terrain) {
-        QAction *terrainProperties = menu.addAction(propIcon,
-                                                 tr("Terrain &Properties..."));
-        terrainProperties->setEnabled(!isExternal);
-        Utils::setThemeIcon(terrainProperties, "document-properties");
-        menu.addSeparator();
+    QAction *terrainProperties = menu.addAction(propIcon,
+                                             tr("Terrain &Properties..."));
+    terrainProperties->setEnabled(!isExternal);
+    Utils::setThemeIcon(terrainProperties, "document-properties");
+    menu.addSeparator();
 
-        connect(terrainProperties, SIGNAL(triggered()),
-                SLOT(editTerrainProperties()));
-    }
+    connect(terrainProperties, SIGNAL(triggered()),
+            SLOT(editTerrainProperties()));
 
     menu.exec(event->globalPos());
 }

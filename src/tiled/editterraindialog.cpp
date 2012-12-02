@@ -79,6 +79,7 @@ EditTerrainDialog::EditTerrainDialog(MapDocument *mapDocument,
     : QDialog(parent)
     , mUi(new Ui::EditTerrainDialog)
     , mMapDocument(mapDocument)
+    , mInitialUndoStackIndex(mMapDocument->undoStack()->index())
     , mTileset(tileset)
 {
     mUi->setupUi(this);
@@ -126,6 +127,16 @@ EditTerrainDialog::EditTerrainDialog(MapDocument *mapDocument,
 
     connect(mUi->tilesetView, SIGNAL(terrainImageSelected(Tile*)),
             SLOT(setTerrainImage(Tile*)));
+
+    QUndoStack *undoStack = mapDocument->undoStack();
+    connect(undoStack, SIGNAL(indexChanged(int)),
+            SLOT(updateUndoButton()));
+    connect(undoStack, SIGNAL(canRedoChanged(bool)),
+            mUi->redo, SLOT(setEnabled(bool)));
+    connect(mUi->undo, SIGNAL(clicked()), undoStack, SLOT(undo()));
+    connect(mUi->redo, SIGNAL(clicked()), undoStack, SLOT(redo()));
+
+    updateUndoButton();
 }
 
 EditTerrainDialog::~EditTerrainDialog()
@@ -160,8 +171,17 @@ void EditTerrainDialog::addTerrainType()
 {
     Terrain *terrain = new Terrain(mTileset->terrainCount(), mTileset,
                                    QString(), -1);
+    terrain->setName(tr("New Terrain"));
 
     mMapDocument->undoStack()->push(new AddTerrain(mMapDocument, terrain));
+
+    // Select the newly added terrain and edit its name
+    const QModelIndex index = mTerrainModel->index(terrain, 1);
+    QItemSelectionModel *selectionModel = mUi->terrainList->selectionModel();
+    selectionModel->setCurrentIndex(index,
+                                    QItemSelectionModel::ClearAndSelect |
+                                    QItemSelectionModel::Rows);
+    mUi->terrainList->edit(index);
 }
 
 void EditTerrainDialog::removeTerrainType()
@@ -185,4 +205,13 @@ void EditTerrainDialog::setTerrainImage(Tile *tile)
                                                         terrain->tileset(),
                                                         terrain->id(),
                                                         tile->id()));
+}
+
+void EditTerrainDialog::updateUndoButton()
+{
+    QUndoStack *undoStack = mMapDocument->undoStack();
+    const int index = undoStack->index();
+
+    mUi->undo->setEnabled(index > mInitialUndoStackIndex);
+    mUi->redo->setEnabled(undoStack->canRedo());
 }
