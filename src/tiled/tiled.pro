@@ -52,6 +52,7 @@ SOURCES += aboutdialog.cpp \
     brushitem.cpp \
     bucketfilltool.cpp \
     changemapobject.cpp \
+    changemapobjectsorder.cpp \
     changemapproperties.cpp \
     changeimagelayerproperties.cpp \
     changeobjectgroupproperties.cpp \
@@ -116,6 +117,7 @@ SOURCES += aboutdialog.cpp \
     propertiesmodel.cpp \
     propertiesview.cpp \
     quickstampmanager.cpp \
+    raiselowerhelper.cpp \
     renamelayer.cpp \
     resizedialog.cpp \
     resizehelper.cpp \
@@ -161,6 +163,7 @@ HEADERS += aboutdialog.h \
     brushitem.h \
     bucketfilltool.h \
     changemapobject.h \
+    changemapobjectsorder.h \
     changemapproperties.h \
     changeimagelayerproperties.h\
     changeobjectgroupproperties.h \
@@ -225,6 +228,7 @@ HEADERS += aboutdialog.h \
     propertiesmodel.h \
     propertiesview.h \
     quickstampmanager.h \
+    raiselowerhelper.h \
     rangeset.h \
     renamelayer.h \
     resizedialog.h \

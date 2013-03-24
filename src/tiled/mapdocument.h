@@ -31,6 +31,7 @@
 #include <QRegion>
 #include <QString>
 
+class QModelIndex;
 class QPoint;
 class QRect;
 class QSize;
@@ -310,12 +311,18 @@ signals:
     void tilesetNameChanged(Tileset *tileset);
 
     void objectsAdded(const QList<MapObject*> &objects);
-    void objectsAboutToBeRemoved(const QList<MapObject*> &objects);
+    void objectsInserted(ObjectGroup *objectGroup, int first, int last);
     void objectsRemoved(const QList<MapObject*> &objects);
     void objectsChanged(const QList<MapObject*> &objects);
+    void objectsIndexChanged(ObjectGroup *objectGroup, int first, int last);
 
 private slots:
     void onObjectsRemoved(const QList<MapObject*> &objects);
+
+    void onObjectsInserted(const QModelIndex &parent, int first, int last);
+    void onObjectsInsertedOrRemoved(const QModelIndex &parent, int first, int last);
+    void onObjectsMoved(const QModelIndex &parent, int start, int end,
+                        const QModelIndex &destination, int row);
 
     void onLayerAdded(int index);
     void onLayerAboutToBeRemoved(int index);

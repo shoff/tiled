@@ -122,12 +122,14 @@ void MapScene::setMapDocument(MapDocument *mapDocument)
                 this, SLOT(layerChanged(int)));
         connect(mMapDocument, SIGNAL(currentLayerIndexChanged(int)),
                 this, SLOT(currentLayerIndexChanged()));
-        connect(mMapDocument, SIGNAL(objectsAdded(QList<MapObject*>)),
-                this, SLOT(objectsAdded(QList<MapObject*>)));
+        connect(mMapDocument, SIGNAL(objectsInserted(ObjectGroup*,int,int)),
+                this, SLOT(objectsInserted(ObjectGroup*,int,int)));
         connect(mMapDocument, SIGNAL(objectsRemoved(QList<MapObject*>)),
                 this, SLOT(objectsRemoved(QList<MapObject*>)));
         connect(mMapDocument, SIGNAL(objectsChanged(QList<MapObject*>)),
                 this, SLOT(objectsChanged(QList<MapObject*>)));
+        connect(mMapDocument, SIGNAL(objectsIndexChanged(ObjectGroup*,int,int)),
+                this, SLOT(objectsIndexChanged(ObjectGroup*,int,int)));
         connect(mMapDocument, SIGNAL(selectedObjectsChanged()),
                 this, SLOT(updateSelectedObjectItems()));
     }
@@ -200,10 +202,13 @@ QGraphicsItem *MapScene::createLayerItem(Layer *layer)
         layerItem = new TileLayerItem(tl, mMapDocument->renderer());
     } else if (ObjectGroup *og = layer->asObjectGroup()) {
         ObjectGroupItem *ogItem = new ObjectGroupItem(og);
+        int objectIndex = 0;
         foreach (MapObject *object, og->objects()) {
             MapObjectItem *item = new MapObjectItem(object, mMapDocument,
                                                     ogItem);
+            item->setZValue(objectIndex);
             mObjectItems.insert(object, item);
+            ++objectIndex;
         }
         layerItem = ogItem;
     } else if (ImageLayer *il = layer->asImageLayer()) {
@@ -363,24 +368,28 @@ void MapScene::layerChanged(int index)
 /**
  * Inserts map object items for the given objects.
  */
-void MapScene::objectsAdded(const QList<MapObject*> &objects)
+void MapScene::objectsInserted(ObjectGroup *objectGroup, int first, int last)
 {
-    foreach (MapObject *object, objects) {
-        ObjectGroup *og = object->objectGroup();
-        ObjectGroupItem *ogItem = 0;
+    ObjectGroupItem *ogItem = 0;
 
-        // Find the object group item for the map object's object group
-        foreach (QGraphicsItem *item, mLayerItems) {
-            if (ObjectGroupItem *ogi = dynamic_cast<ObjectGroupItem*>(item)) {
-                if (ogi->objectGroup() == og) {
-                    ogItem = ogi;
-                    break;
-                }
+    // Find the object group item for the object group
+    foreach (QGraphicsItem *item, mLayerItems) {
+        if (ObjectGroupItem *ogi = dynamic_cast<ObjectGroupItem*>(item)) {
+            if (ogi->objectGroup() == objectGroup) {
+                ogItem = ogi;
+                break;
             }
         }
+    }
 
-        Q_ASSERT(ogItem);
+    Q_ASSERT(ogItem);
+
+    for (int i = first; i <= last; ++i) {
+        MapObject *object = objectGroup->objectAt(i);
+
         MapObjectItem *item = new MapObjectItem(object, mMapDocument, ogItem);
+        item->setZValue(i);
+
         mObjectItems.insert(object, item);
     }
 }
@@ -410,6 +419,20 @@ void MapScene::objectsChanged(const QList<MapObject*> &objects)
         Q_ASSERT(item);
 
         item->syncWithMapObject();
+    }
+}
+
+/**
+ * Updates the Z value of the objects when appropriate.
+ */
+void MapScene::objectsIndexChanged(ObjectGroup *objectGroup,
+                                   int first, int last)
+{
+    for (int i = first; i <= last; ++i) {
+        MapObjectItem *item = itemForObject(objectGroup->objectAt(i));
+        Q_ASSERT(item);
+
+        item->setZValue(i);
     }
 }
 

@@ -94,10 +94,15 @@ MapDocument::MapDocument(Map *map, const QString &fileName):
             SIGNAL(objectsAdded(QList<MapObject*>)));
     connect(mMapObjectModel, SIGNAL(objectsChanged(QList<MapObject*>)),
             SIGNAL(objectsChanged(QList<MapObject*>)));
-    connect(mMapObjectModel, SIGNAL(objectsAboutToBeRemoved(QList<MapObject*>)),
-            SIGNAL(objectsAboutToBeRemoved(QList<MapObject*>)));
     connect(mMapObjectModel, SIGNAL(objectsRemoved(QList<MapObject*>)),
             SLOT(onObjectsRemoved(QList<MapObject*>)));
+
+    connect(mMapObjectModel, SIGNAL(rowsInserted(QModelIndex,int,int)),
+            SLOT(onObjectsInserted(QModelIndex,int,int)));
+    connect(mMapObjectModel, SIGNAL(rowsRemoved(QModelIndex,int,int)),
+            SLOT(onObjectsInsertedOrRemoved(QModelIndex,int,int)));
+    connect(mMapObjectModel, SIGNAL(rowsMoved(QModelIndex,int,int,QModelIndex,int)),
+            SLOT(onObjectsMoved(QModelIndex,int,int,QModelIndex,int)));
 
     connect(mUndoStack, SIGNAL(cleanChanged(bool)), SIGNAL(modifiedChanged()));
 
@@ -552,6 +557,39 @@ void MapDocument::onObjectsRemoved(const QList<MapObject*> &objects)
 {
     deselectObjects(objects);
     emit objectsRemoved(objects);
+}
+
+void MapDocument::onObjectsInserted(const QModelIndex &parent, int first, int last)
+{
+    emit objectsInserted(mMapObjectModel->toObjectGroup(parent), first, last);
+    onObjectsInsertedOrRemoved(parent, first, last);
+}
+
+void MapDocument::onObjectsInsertedOrRemoved(const QModelIndex &parent, int first, int last)
+{
+    Q_UNUSED(first)
+
+    ObjectGroup *objectGroup = mMapObjectModel->toObjectGroup(parent);
+
+    // Inserting or removing objects changes the index of any that come after
+    const int lastIndex = objectGroup->objectCount() - 1;
+    if (last < lastIndex)
+        emit objectsIndexChanged(objectGroup, last + 1, lastIndex);
+}
+
+void MapDocument::onObjectsMoved(const QModelIndex &parent, int start, int end,
+                                 const QModelIndex &destination, int row)
+{
+    if (parent != destination)
+        return;
+
+    ObjectGroup *objectGroup = mMapObjectModel->toObjectGroup(parent);
+
+    // Determine the full range over which object indexes changed
+    const int first = qMin(start, row);
+    const int last = qMax(end, row - 1);
+
+    emit objectsIndexChanged(objectGroup, first, last);
 }
 
 void MapDocument::onLayerAdded(int index)
